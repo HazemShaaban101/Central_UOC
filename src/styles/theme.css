@@ -1,0 +1,433 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens of the theme (reference: the full-page mockup and "Icons"): near-black page, glass
+ * cards with rounded corners and a soft violet line. Amber, red, green and purple are for status and
+ * categories only.
+ * The UI is laid out on a fixed 1920×1080 stage (see Stage.tsx), so every pixel value below is a
+ * design pixel.
+ */
+@theme {
+  --color-night-950: #030205;
+  --color-night-900: #050307;
+  --color-night-800: #07040a;
+  --color-night-700: #0a060e;
+
+  --color-accent: #9d78ff;
+  --color-accent-soft: #bba6ff;
+  --color-accent-deep: #512483;
+  --color-aqua: #b58ce3;
+  --color-aqua-soft: #b487e8;
+  --color-aqua-dim: #482a6a;
+  --color-ok: #7fcf9d;
+  --color-warn: #e8a98c;
+  --color-warn-soft: #f0c3ab;
+  --color-alarm: #d96b84;
+  --color-alarm-soft: #e59aaa;
+
+  --color-ink: #ece6f8;
+  --color-ink-2: #e4d6f5;
+  --color-ink-3: #bbaacb;
+  --color-ink-4: #534760;
+
+  --font-ui: 'Ubuntu', 'Segoe UI', system-ui, sans-serif;
+  --font-brand: 'Ubuntu', 'Segoe UI', sans-serif;
+  --font-plain: 'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  --animate-spin-slow: spin 14s linear infinite;
+}
+
+:root {
+  --pf-line: rgba(157,120,255, 0.20);
+  --pf-line-soft: rgba(157,120,255, 0.09);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    background: #08050b;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: var(--font-ui);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    font-synthesis: none;
+  }
+
+  button {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+
+  input {
+    font: inherit;
+  }
+}
+
+@layer components {
+  /*
+   * Card (design: full-page mockup): a glass panel with 16px corners and a soft violet line, a little
+   * lighter at the top. Popovers and tooltips use the solid variant so nothing shows through.
+   */
+  .pf-panel {
+    position: relative;
+    border-radius: 16px;
+    border: 1px solid var(--pf-line);
+    background: linear-gradient(180deg, rgba(12,9,16, 0.62) 0%, rgba(4,3,7, 0.82) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255, 0.035), 0 18px 40px rgba(0,0,0, 0.35);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .pf-panel-solid {
+    background: linear-gradient(180deg, #0b0810 0%, #060409 100%);
+    box-shadow: 0 24px 60px rgba(0,0,0, 0.5);
+  }
+  .pf-panel-link {
+    cursor: pointer;
+  }
+  .pf-panel-link:hover {
+    border-color: rgba(157,120,255, 0.85);
+    box-shadow: inset 0 1px 0 rgba(157,120,255, 0.07), 0 0 24px rgba(157,120,255, 0.18);
+  }
+
+  /* A small rounded control (buttons, chips, state tiles). */
+  .pf-chip {
+    border-radius: 10px;
+  }
+
+  .pf-accent-text {
+    color: var(--color-accent);
+    text-shadow: 0 0 18px rgba(157,120,255, 0.35);
+  }
+
+  /* The tiny uppercase label of the HUD (eyebrows, axis titles, footers). */
+  .pf-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .pf-scroll {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(157,120,255, 0.3) transparent;
+  }
+}
+
+/* Shared motion. */
+@keyframes pf-pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-blink {
+    animation: none !important;
+  }
+}
+
+@keyframes pf-alarm-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes pf-dash {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+@keyframes pf-glow-drift {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.08);
+  }
+}
+
+@keyframes pf-scan {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes pf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Navigation badges (reference: "Icons") ---------------------------------------------------- */
+@keyframes hud-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes hud-ripple {
+  from {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+@keyframes k-bob {
+  0%,
+  100% {
+    transform: translateY(1.5px);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+@keyframes k-shadow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(0.8);
+    opacity: 0.25;
+  }
+}
+@keyframes k-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  25% {
+    transform: scale(0.96, 1.07) skewX(3deg);
+  }
+  50% {
+    transform: scale(1.03, 0.97) skewX(-2deg);
+  }
+  75% {
+    transform: scale(0.97, 1.05) skewX(2deg);
+  }
+}
+@keyframes k-zap {
+  0%,
+  55%,
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  60% {
+    opacity: 0.25;
+    transform: translateX(-1px);
+  }
+  66% {
+    opacity: 1;
+    transform: translateX(1px);
+  }
+  72% {
+    opacity: 0.4;
+    transform: translateX(0);
+  }
+  78% {
+    opacity: 1;
+  }
+}
+@keyframes k-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.09);
+  }
+}
+@keyframes k-swing {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+@keyframes k-wrench {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(14deg);
+  }
+}
+@keyframes k-orbit {
+  0%,
+  100% {
+    transform: rotate(-10deg) scale(1);
+  }
+  50% {
+    transform: rotate(10deg) scale(1.06);
+  }
+}
+@keyframes k-drip {
+  0%,
+  100% {
+    transform: translateY(-1.5px);
+  }
+  50% {
+    transform: translateY(1.5px);
+  }
+}
+@keyframes k-wave {
+  0%,
+  100% {
+    transform: translateX(-1.5px);
+  }
+  50% {
+    transform: translateX(1.5px);
+  }
+}
+
+/*
+ * Behaviour from the design recording: every badge is alive at rest (a bright segment travels round
+ * the outer hexagon, the disc breathes, the glyph moves); under the pointer it grows, everything
+ * speeds up and hexagon ripples spread out.
+ */
+@keyframes hud-orbit {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+.hud-badge {
+  --speed: 1;
+  cursor: pointer;
+}
+.hud-badge svg {
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+.hud-badge .label {
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3), color 0.3s;
+}
+.hud-badge:hover,
+.hud-badge:focus-visible {
+  --speed: 0.4;
+  outline: none;
+}
+.hud-badge:hover svg,
+.hud-badge:focus-visible svg {
+  transform: translateY(-3px) scale(1.16);
+}
+.hud-badge:hover .label,
+.hud-badge:focus-visible .label {
+  transform: scale(1.08);
+  color: #ffffff;
+}
+.hud-badge .orbit {
+  stroke-dasharray: 16 84;
+  animation: hud-orbit calc(5s * var(--speed)) linear infinite;
+}
+.hud-badge .halo {
+  animation: hud-glow calc(3s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge .ripple {
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+  opacity: 0;
+}
+.hud-badge:hover .ripple,
+.hud-badge:focus-visible .ripple {
+  animation: hud-ripple 1.1s ease-out infinite;
+}
+.hud-badge:hover .ripple.r2,
+.hud-badge:focus-visible .ripple.r2 {
+  animation-delay: 0.55s;
+}
+.hud-badge .glyph {
+  filter: drop-shadow(0 0 2px rgba(95,20,181, 0.55));
+  transition: filter 0.3s;
+}
+.hud-badge:hover .glyph,
+.hud-badge:focus-visible .glyph,
+.hud-badge.is-active .glyph {
+  filter: drop-shadow(0 0 5px rgba(95,20,181, 1)) brightness(1.25);
+}
+.hud-badge .a {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.hud-badge.i-location .p0 {
+  animation: k-shadow calc(2.4s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-location .p1 {
+  animation: k-bob calc(2.4s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-fire .a {
+  transform-origin: 50% 100%;
+  animation: k-flicker calc(1.1s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-bolt .a {
+  animation: k-zap calc(2.2s * var(--speed)) steps(1, end) infinite;
+}
+.hud-badge.i-community .a {
+  animation: k-orbit calc(3.6s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-meter .a {
+  transform-origin: 50% 85%;
+  animation: k-swing calc(2.6s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-shield .a {
+  animation: k-pulse calc(2.2s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-wrench .a {
+  animation: k-wrench calc(2.4s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-waste .p0 {
+  animation: k-drip calc(2.2s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-waste .p1 {
+  animation: k-wave calc(2.2s * var(--speed)) ease-in-out infinite;
+}
+.hud-badge.i-fan .a {
+  animation: pf-spin calc(3s * var(--speed)) linear infinite;
+}
+.hud-badge.i-gear .a {
+  animation: pf-spin calc(9s * var(--speed)) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
