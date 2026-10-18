@@ -3,7 +3,7 @@ import { Signal, type SignalDef } from '@/sim/signals';
 /**
  * Every simulated measurement on the platform, by id. Screens reference these ids, never numbers,
  * so a widget can be re-pointed at a live source (see data/binding.ts) without touching the screen.
- * Ranges are plausible for a large open-air mall (Cairo).
+ * Ranges are plausible for Central (7 buildings, 6 × 1,000 TR plant, New Cairo).
  */
 const DEFS = {
   'weather.temp': { unit: '°C', low: 19, high: 29, profile: 'hvac', noise: 0.08, drift: 180, decimals: 0 },
@@ -29,6 +29,7 @@ const DEFS = {
 
   // ---- External infrastructure (3D View) ---------------------------------------------------------
   'infra.lightsOn': { unit: 'lamps', low: 0, high: 148, profile: 'night', noise: 0.01, drift: 600, decimals: 0, clampMin: 0, clampMax: 148 },
+  'lighting.load': { unit: 'kW', low: 180, high: 640, profile: 'night', noise: 0.04, decimals: 0 },
   'infra.cctvOnline': { unit: 'cams', low: 306, high: 312, profile: 'flat', noise: 0.4, drift: 240, decimals: 0, clampMax: 320 },
   'infra.binsFull': { unit: 'bins', low: 3, high: 15, profile: 'retail', noise: 0.15, drift: 90, decimals: 0, clampMin: 0 },
 
@@ -36,7 +37,7 @@ const DEFS = {
   'electric.transformerLoad': { unit: '%', low: 42, high: 84, profile: 'retail', noise: 0.04, decimals: 0 },
   // Peak-shaving: generators share load in the evening peak (as in the design, not standby-only).
   'electric.generatorLoad': { unit: '%', low: 52, high: 84, profile: 'retail', noise: 0.05, decimals: 0 },
-  'electric.demand': { unit: 'MW', low: 6.5, high: 15.5, profile: 'retail', noise: 0.05, decimals: 2 },
+  'electric.demand': { unit: 'MW', low: 1.7, high: 4.5, profile: 'retail', noise: 0.06, decimals: 2 },
   'electric.pf': { unit: 'PF', low: 0.97, high: 0.93, profile: 'retail', noise: 0.05, decimals: 2 },
 
   // ---- Metering ---------------------------------------------------------------------------------
@@ -46,8 +47,8 @@ const DEFS = {
   'metering.efficiency': { unit: '%', low: 86, high: 74, profile: 'retail', noise: 0.05, decimals: 1 },
   'metering.water': { unit: 'm³/h', low: 18, high: 140, profile: 'retail', noise: 0.08, decimals: 1 },
   'metering.waterToday': { unit: 'm³', low: 1950, high: 2350, profile: 'flat', noise: 0.04, drift: 600, decimals: 0 },
-  'metering.btu': { unit: 'MBTU/h', low: 8, high: 34, profile: 'hvac', noise: 0.07, decimals: 1 },
-  'metering.btuToday': { unit: 'MBTU', low: 480, high: 560, profile: 'flat', noise: 0.04, drift: 600, decimals: 0 },
+  'metering.btu': { unit: 'MBTU/h', low: 26, high: 66, profile: 'hvac', noise: 0.07, decimals: 1 },
+  'metering.btuToday': { unit: 'MBTU', low: 760, high: 940, profile: 'flat', noise: 0.04, drift: 600, decimals: 0 },
 
   // ---- Plumbing ---------------------------------------------------------------------------------
   'plumbing.domesticFlow': { unit: 'm³/h', low: 6, high: 48, profile: 'retail', noise: 0.09, decimals: 1 },
@@ -62,7 +63,11 @@ const DEFS = {
   'hvac.chwSupply': { unit: '°C', low: 6.6, high: 7.4, profile: 'hvac', noise: 0.25, decimals: 1 },
   'hvac.chwReturn': { unit: '°C', low: 11.2, high: 13.4, profile: 'hvac', noise: 0.2, decimals: 1 },
   'hvac.pumpFlow': { unit: 'm³/h', low: 260, high: 520, profile: 'hvac', noise: 0.05, decimals: 0 },
-  'hvac.coolingLoad': { unit: 'TR', low: 620, high: 1650, profile: 'hvac', noise: 0.06, decimals: 0 },
+  'hvac.coolingLoad': { unit: 'TR', low: 2200, high: 5600, profile: 'hvac', noise: 0.06, decimals: 0 },
+  'hvac.supplyAir': { unit: '°C', low: 14.2, high: 15.1, profile: 'hvac', noise: 0.25, decimals: 1 },
+  'hvac.roomTemp': { unit: '°C', low: 22.9, high: 23.8, profile: 'occupancy', noise: 0.2, decimals: 1 },
+  'hvac.carParkCo': { unit: 'ppm', low: 8, high: 42, profile: 'occupancy', noise: 0.1, decimals: 0 },
+  'hvac.plantKw': { unit: 'kW', low: 1500, high: 3700, profile: 'hvac', noise: 0.05, decimals: 0 },
   'hvac.co2': { unit: 'ppm', low: 420, high: 780, profile: 'occupancy', noise: 0.08, decimals: 0 },
   'hvac.airflow': { unit: '%', low: 45, high: 92, profile: 'hvac', noise: 0.05, decimals: 0 },
   'hvac.runtimeA': { unit: 'Hrs', low: 2340, high: 2340, profile: 'flat', noise: 0, decimals: 0 },

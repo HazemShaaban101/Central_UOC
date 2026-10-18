@@ -91,7 +91,7 @@ export function StatTile({ frame, index = 0, label, value, unit, tone = 'neutral
 }
 
 /** One KPI from the register as a tile; clicking opens its definition. */
-export function KpiTile({ id, frame, index = 0 }: { id: string; frame: PanelProps['frame']; index?: number; big?: boolean }) {
+export function KpiTile({ id, frame, index = 0, to }: { id: string; frame: PanelProps['frame']; index?: number; big?: boolean; to?: string }) {
   const k = kpiById(id);
   const { kpi } = useFleet();
   const r = k.compute(kpi);
@@ -108,8 +108,8 @@ export function KpiTile({ id, frame, index = 0 }: { id: string; frame: PanelProp
       value={numeric ? <AnimatedNumber value={r.value!} decimals={(r.text.split(' ')[0].split('.')[1] ?? '').length} /> : r.text}
       unit={unit}
       note={r.note}
-      onClick={() => navigate(`/command/kpis?id=${k.id}`)}
-      hint={`${k.id} · target ${k.target} · open in the KPI register`}
+      onClick={to ? () => navigate(to) : undefined}
+      hint={`${k.id} · target ${k.target}`}
     />
   );
 }

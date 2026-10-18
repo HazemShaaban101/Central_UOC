@@ -42,7 +42,7 @@ export function PageTitle() {
           </Fragment>
         ))}
         <span className="text-[24px] font-medium leading-none text-white" aria-current="page" style={{ textShadow: '0 0 18px rgba(157,120,255,0.25)' }}>
-          {item ? `Building ${item.label}` : (sub?.label ?? sys.label)}
+          {item ? (item.id === 'bs' ? 'Basements B1 · B2' : `Building ${item.label.slice(1)}`) : (sub?.label ?? sys.label)}
         </span>
       </nav>
     </div>

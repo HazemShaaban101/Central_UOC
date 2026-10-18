@@ -31,23 +31,25 @@ from the submittal, and every KPI, SOP and point is tagged with how sure we are 
 
 ## Verticals
 
+The platform demo's verticals and tabs, with Central's data; the subsystems Central has and the demo
+did not are added in the same card layouts (marked *new*).
+
 | Vertical | Tabs |
 |---|---|
-| Site | Schematic site plan with live alarm state per building; click a building to scope every KPI; executive overlay |
-| Command | Executive scorecard · Operations console (alarms → SOPs, drills) · KPI Register · SOP Library · Data Coverage |
-| HVAC | Chiller Plant · Heat Rejection · Air Handling (3D FAHU) · Fan Coil Units · Car Park (CO map) · Ventilation |
-| Electric | MV & Transformers · Distribution · Generators & ATS · UPS · SLD (typical, illustrative) |
-| Metering | Cooling Meters · Cooling Billing · Energy |
-| Life Safety | Fire Alarm (live cause-and-effect) · Smoke Control · Public Address |
-| Security | CCTV · Access Control (illustrative) |
-| Facilities | Lifts & Escalators · Drainage · Lighting |
-| CAFM | Work Orders · PPM Plan · Asset Register |
-
-Every table row opens the asset's live points (Galaxy `Tag.Attribute` view, coloured by tier) and,
-when it is in alarm, the SOP that handles it.
+| 3D View | Central site plan with live alarm state per building; click a building to scope every KPI |
+| HVAC *new* | Chiller Plant · Air Handling (3D FAHU) · Fan Coil Units · Ventilation |
+| Fire | Fire System (B01–B07 + basements, fire drill) · Fire Hydrants · Smoke Control *new* · Public Address *new* |
+| Electric | Transformers · MDB · Generators · UPS · SLD (Basement 01 substation) · Lighting *new* |
+| Community | Application · Navigation · Crowd Monitoring · Social Media (not in the submittal: illustrative) |
+| Metering | Energy Metering · Energy Analytics · Water Metering · BTU (655 meters) · Billing |
+| Security | CCTV · Access Control · Parking & LPR · Gates |
+| Plumbing | Domestic / Irrigation · Pumps · Valve Chambers · SLD |
+| Wastewater | Submersible Pumps (32 duplex sets on B2, four sump groups) · Odor Control |
+| Maintenance | Ticketing · Mechanical · Electrical · Pumps · Sensors · Lifts & Escalators *new* |
 
 ## KPIs and SOPs
 
+- The KPI register and SOP library are documents (`docs/`), not screens.
 - `src/model/central/kpis.ts` — 37 KPIs (14 executive, 17 operations, 6 maintenance): definition,
   formula, source points, tier, target; computed live from the simulated fleet.
 - `src/model/central/sops.ts` — 41 SOPs: trigger points, roles, steps, close-out check read from
@@ -69,5 +71,6 @@ site to `dist/`.
 | Folder | What is in it |
 |---|---|
 | `src/model/central/` | Project & zones, point templates, asset registry + simulator, KPIs, SOPs, assumed CAFM |
-| `src/screens/central/` | The Central screens and the shared kit (KPI tiles, fleet tables, asset drawer) |
+| `src/screens/central/` | The home page (site plan), the added subsystems, and the tile kit |
+| `src/screens/hvac/` | HVAC screens (new vertical) |
 | `scripts/export-docs.ts` | Markdown export of the registers |

@@ -9,6 +9,7 @@ import { ComingSoon } from '@/screens/ComingSoon';
 
 const SiteScreen = lazy(() => import('@/screens/central/SiteScreen'));
 const EquipmentScreen = lazy(() => import('@/screens/site/EquipmentScreen'));
+const FireBuildingScreen = lazy(() => import('@/screens/fire/FireBuildingScreen'));
 
 export function App() {
   return (
@@ -20,6 +21,7 @@ export function App() {
             <Route element={<SystemLayout />}>
               <Route index element={<SiteScreen />} />
               <Route path="hvac/air/:device" element={<EquipmentScreen />} />
+              <Route path="fire/system/:building" element={<FireBuildingScreen />} />
               <Route path=":system" element={<SystemIndex />} />
               <Route path=":system/:sub" element={<SubsystemScreen />} />
             </Route>

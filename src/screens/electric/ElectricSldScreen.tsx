@@ -17,11 +17,11 @@ const MDB_B_X = [460, 565, 670];
 const GEN_X = [960, 1070, 1180, 1290];
 const EMDB_X = [950, 1040, 1130, 1220, 1310];
 const LOAD_TEXT: Record<string, string> = {
-  CB_FA1: 'SMDB\nRetail East',
-  CB_FA2: 'SMDB\nFood Court',
-  CB_FA3: 'SMDB\nCar Park',
-  CB_FB1: 'SMDB Cinema\n& Anchor',
-  CB_FB2: 'SMDB\nOffices',
+  CB_FA1: 'MCC\nChiller plant',
+  CB_FA2: 'MCC\nCHW pumps',
+  CB_FA3: 'SMDB\nCar park fans',
+  CB_FB1: 'SMDB\nBasement FCUs',
+  CB_FB2: 'SMDB\nSump pumps',
   CB_E1: 'UPS\ninput',
   CB_E2: 'Fire\npumps',
   CB_E3: 'Smoke\nextract',

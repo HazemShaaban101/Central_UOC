@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { BUILDINGS } from '@/model/site';
-import { ZONES, zoneById } from '@/model/central/project';
+import { BUILDINGS, buildingById } from '@/model/site';
+import { ZONES } from '@/model/central/project';
 import { derivedSignal, signal, type SignalId } from '@/sim/catalog';
 import { hashString } from '@/sim/noise';
 import type { Signal, SignalDef } from '@/sim/signals';
@@ -31,7 +31,7 @@ export const BUILDING_SHARE: Record<string, number> = Object.fromEntries(ZONES.m
 const EXTENSIVE = new Set(['kW', 'MW', 'MWh', 'm³', 'm³/h', 'MBTU', 'MBTU/h', 'TR', 'People', 'people', 'users', 'sessions', 'queries', 'mentions', 'cars/h', 'swipes', 'vehicles/h', 'tickets', 'Free', 'kVAR']);
 
 export function scopeLabel(scope: ScopeId): string {
-  return scope === 'project' ? 'Entire Project' : (zoneById(scope)?.label ?? scope.toUpperCase());
+  return scope === 'project' ? 'Entire Project' : scope === 'bs' ? 'Basements B1 · B2' : `Building ${buildingById(scope)?.label.slice(1) ?? scope.toUpperCase()}`;
 }
 
 export function scopedSignal(id: SignalId, scope: ScopeId): Signal {
@@ -58,12 +58,14 @@ export function scopedSignal(id: SignalId, scope: ScopeId): Signal {
   return derivedSignal(`${id}@${scope}`, scoped);
 }
 
-/** Sub-areas for per-area charts: the buildings at project scope; inside one zone, its local control panels. */
+/** Sub-areas for per-area charts: the buildings at project scope, the floors inside one building. */
 export function scopeAreas(scope: ScopeId): { id: string; label: string; share: number }[] {
   if (scope === 'project') {
     return BUILDINGS.map((b) => ({ id: b.id, label: b.label, share: BUILDING_SHARE[b.id] ?? 0.1 }));
   }
-  const z = zoneById(scope);
-  const panels = (z?.lcps ?? []).slice(0, 8);
-  return panels.map((p) => ({ id: p, label: p.replace(/^LCP-/, '').replace(/-ROOF/, ''), share: 1 / panels.length }));
+  const b = buildingById(scope);
+  const floors = (b?.floors ?? []).slice().reverse();
+  const weights = floors.map((f) => (f.id === 'gf' ? 1.6 : f.id === 'ff' ? 1.3 : f.id === 'r' || f.id === 'ur' ? 0.35 : 1));
+  const total = weights.reduce((a, w) => a + w, 0) || 1;
+  return floors.map((f, i) => ({ id: f.id, label: f.label, share: weights[i] / total }));
 }

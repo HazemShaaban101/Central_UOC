@@ -238,10 +238,10 @@ export interface UpsUnit {
 }
 
 export const UPS_UNITS: UpsUnit[] = [
-  { tag: 'UPS_001', label: 'UPS-01', serves: 'Data centre · A side', kva: 200, load: 52, autonomy: 16, batteryV: 540 },
-  { tag: 'UPS_002', label: 'UPS-02', serves: 'Data centre · B side', kva: 200, load: 48, autonomy: 18, batteryV: 540 },
+  { tag: 'UPS_001', label: 'UPS-01', serves: 'CRAC / IT room · A side', kva: 200, load: 52, autonomy: 16, batteryV: 540 },
+  { tag: 'UPS_002', label: 'UPS-02', serves: 'CRAC / IT room · B side', kva: 200, load: 48, autonomy: 18, batteryV: 540 },
   { tag: 'UPS_003', label: 'UPS-03', serves: 'Security & CCTV', kva: 60, load: 64, autonomy: 22, batteryV: 480 },
-  { tag: 'UPS_004', label: 'UPS-04', serves: 'BMS & fire panels', kva: 30, load: 38, autonomy: 45, batteryV: 384 },
+  { tag: 'UPS_004', label: 'UPS-04', serves: 'BMS, AVEVA & fire panels', kva: 30, load: 38, autonomy: 45, batteryV: 384 },
 ];
 
 export function upsValues(u: UpsUnit, mains: MainsState, now: number): AttrValues {
@@ -297,13 +297,13 @@ export const TRANSFORMERS = [
 ];
 
 export const MDB_A_FEEDERS: Feeder[] = [
-  { tag: 'CB_FA1', label: 'MCC-01 FAHU & fans', share: 0.41 },
-  { tag: 'CB_FA2', label: 'SMDB Tenants L0–L2', share: 0.35 },
-  { tag: 'CB_FA3', label: 'SMDB Tenants L3+', share: 0.24 },
+  { tag: 'CB_FA1', label: 'MCC Chiller plant', share: 0.41 },
+  { tag: 'CB_FA2', label: 'MCC CHW pumps', share: 0.35 },
+  { tag: 'CB_FA3', label: 'SMDB Car park fans', share: 0.24 },
 ];
 export const MDB_B_FEEDERS: Feeder[] = [
-  { tag: 'CB_FB1', label: 'MCC Chiller plant', share: 0.44 },
-  { tag: 'CB_FB2', label: 'SMDB Car park & sumps', share: 0.3 },
+  { tag: 'CB_FB1', label: 'SMDB Basement FCUs', share: 0.44 },
+  { tag: 'CB_FB2', label: 'SMDB Sump pumps', share: 0.3 },
   { tag: 'CB_FB3', label: 'EMDB normal supply', share: 0.26 },
 ];
 export const EMDB_FEEDERS: Feeder[] = [

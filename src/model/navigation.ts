@@ -1,10 +1,20 @@
 /**
- * Central's information architecture: nine systems across the top, each with its subsystems along
- * the bottom (the systems in the submittal's integration matrices, plus Command and CAFM). Everything that renders navigation (top orbs, bottom
+ * The platform's information architecture, straight from the sitemap: nine systems across the top,
+ * each with its subsystems along the bottom. Everything that renders navigation (top orbs, bottom
  * tabs, breadcrumbs, routes) reads this one table.
  */
 
-export type SystemId = 'site' | 'command' | 'hvac' | 'electric' | 'metering' | 'safety' | 'security' | 'facilities' | 'cafm';
+export type SystemId =
+  | 'site'
+  | 'hvac'
+  | 'fire'
+  | 'electric'
+  | 'community'
+  | 'metering'
+  | 'security'
+  | 'plumbing'
+  | 'wastewater'
+  | 'maintenance';
 
 export type GlyphId =
   | 'location'
@@ -32,30 +42,27 @@ export interface SystemDef {
 }
 
 export const SYSTEMS: SystemDef[] = [
-  { id: 'site', label: 'Site', glyph: 'location', subsystems: [] },
-  {
-    id: 'command',
-    label: 'Command',
-    glyph: 'community',
-    subsystems: [
-      { id: 'executive', label: 'Executive' },
-      { id: 'operations', label: 'Operations' },
-      { id: 'kpis', label: 'KPI Register' },
-      { id: 'sops', label: 'SOP Library' },
-      { id: 'coverage', label: 'Data Coverage' },
-    ],
-  },
+  { id: 'site', label: '3D View', glyph: 'location', subsystems: [] },
   {
     id: 'hvac',
     label: 'HVAC',
     glyph: 'fan',
     subsystems: [
       { id: 'plant', label: 'Chiller Plant' },
-      { id: 'towers', label: 'Heat Rejection' },
       { id: 'air', label: 'Air Handling' },
       { id: 'fcu', label: 'Fan Coil Units' },
-      { id: 'carpark', label: 'Car Park' },
       { id: 'ventilation', label: 'Ventilation' },
+    ],
+  },
+  {
+    id: 'fire',
+    label: 'Fire',
+    glyph: 'fire',
+    subsystems: [
+      { id: 'system', label: 'Fire System' },
+      { id: 'hydrants', label: 'Fire Hydrants' },
+      { id: 'smoke', label: 'Smoke Control' },
+      { id: 'pa', label: 'Public Address' },
     ],
   },
   {
@@ -63,11 +70,23 @@ export const SYSTEMS: SystemDef[] = [
     label: 'Electric',
     glyph: 'bolt',
     subsystems: [
-      { id: 'mv', label: 'MV & Transformers' },
-      { id: 'distribution', label: 'Distribution' },
-      { id: 'standby', label: 'Generators & ATS' },
+      { id: 'transformers', label: 'Transformers' },
+      { id: 'mdb', label: 'MDB' },
+      { id: 'generators', label: 'Generators' },
       { id: 'ups', label: 'UPS' },
       { id: 'sld', label: 'SLD' },
+      { id: 'lighting', label: 'Lighting' },
+    ],
+  },
+  {
+    id: 'community',
+    label: 'Community',
+    glyph: 'community',
+    subsystems: [
+      { id: 'application', label: 'Application' },
+      { id: 'navigation', label: 'Navigation' },
+      { id: 'crowd', label: 'Crowd Monitoring' },
+      { id: 'social', label: 'Social Media' },
     ],
   },
   {
@@ -75,19 +94,11 @@ export const SYSTEMS: SystemDef[] = [
     label: 'Metering',
     glyph: 'meter',
     subsystems: [
-      { id: 'btu', label: 'Cooling Meters' },
-      { id: 'billing', label: 'Cooling Billing' },
-      { id: 'energy', label: 'Energy' },
-    ],
-  },
-  {
-    id: 'safety',
-    label: 'Life Safety',
-    glyph: 'fire',
-    subsystems: [
-      { id: 'fire', label: 'Fire Alarm' },
-      { id: 'smoke', label: 'Smoke Control' },
-      { id: 'pa', label: 'Public Address' },
+      { id: 'energy', label: 'Energy Metering' },
+      { id: 'analytics', label: 'Energy Analytics' },
+      { id: 'water', label: 'Water Metering' },
+      { id: 'btu', label: 'BTU' },
+      { id: 'billing', label: 'Billing' },
     ],
   },
   {
@@ -97,26 +108,41 @@ export const SYSTEMS: SystemDef[] = [
     subsystems: [
       { id: 'cctv', label: 'CCTV' },
       { id: 'access', label: 'Access Control' },
+      { id: 'parking', label: 'Parking & LPR' },
+      { id: 'gates', label: 'Gates' },
     ],
   },
   {
-    id: 'facilities',
-    label: 'Facilities',
+    id: 'plumbing',
+    label: 'Plumbing',
     glyph: 'wrench',
     subsystems: [
-      { id: 'transport', label: 'Lifts & Escalators' },
-      { id: 'drainage', label: 'Drainage' },
-      { id: 'lighting', label: 'Lighting' },
+      { id: 'domestic', label: 'Domestic / Irrigation' },
+      { id: 'pumps', label: 'Pumps' },
+      { id: 'valves', label: 'Valve Chambers' },
+      { id: 'sld', label: 'SLD' },
     ],
   },
   {
-    id: 'cafm',
-    label: 'CAFM',
+    id: 'wastewater',
+    label: 'Wastewater',
+    glyph: 'waste',
+    subsystems: [
+      { id: 'submersible', label: 'Submersible Pumps' },
+      { id: 'odor', label: 'Odor Control' },
+    ],
+  },
+  {
+    id: 'maintenance',
+    label: 'Maintenance',
     glyph: 'gear',
     subsystems: [
-      { id: 'orders', label: 'Work Orders' },
-      { id: 'ppm', label: 'PPM Plan' },
-      { id: 'assets', label: 'Asset Register' },
+      { id: 'ticketing', label: 'Ticketing' },
+      { id: 'mechanical', label: 'Mechanical' },
+      { id: 'electrical', label: 'Electrical' },
+      { id: 'pumps', label: 'Pumps' },
+      { id: 'sensors', label: 'Sensors' },
+      { id: 'lifts', label: 'Lifts & Escalators' },
     ],
   },
 ];

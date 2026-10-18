@@ -30,7 +30,7 @@ export function ScopeBar() {
   const home = pathname === '/';
   const inSite = pathname.startsWith('/site/');
   // Fire pages describe the whole project (each building has its own page), so there is no building filter.
-  const inFire = false;
+  const inFire = pathname.startsWith('/fire');
 
   useEffect(() => {
     if (!open) return;

@@ -10,7 +10,6 @@ import { ScopeBar } from '@/components/chrome/ScopeBar';
 import { PageTitle } from '@/components/chrome/PageTitle';
 import { useScopeStore } from '@/sim/scope';
 import { systemById } from '@/model/navigation';
-import { AssetDrawer } from '@/screens/central/kit';
 
 /**
  * Chrome around every screen: header, the page (cross-fading between routes), the subsystem tabs
@@ -28,7 +27,6 @@ export function SystemLayout() {
     const m = location.pathname.match(/^\/site\/([^/]+)/);
     if (m) setScope(m[1]);
   }, [location.pathname, setScope]);
-  const inEquipment = /^\/hvac\/air\/[^/]+/.test(location.pathname);
 
   return (
     <>
@@ -49,10 +47,9 @@ export function SystemLayout() {
           </Suspense>
         </motion.main>
       </AnimatePresence>
-      {!inEquipment && <PageTitle />}
+      <PageTitle />
       <ScopeBar />
-      {sys && sys.subsystems.length > 0 && !inEquipment && <SubsystemTabs system={sys} />}
-      <AssetDrawer />
+      {sys && sys.subsystems.length > 0 && <SubsystemTabs system={sys} />}
       <AlertBanner />
       <IntrusionAlert />
       <ConnectionBanner />

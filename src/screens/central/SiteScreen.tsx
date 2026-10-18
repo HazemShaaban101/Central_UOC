@@ -5,6 +5,7 @@ import { Panel } from '@/components/frame/Panel';
 import { Glyph } from '@/components/icons/Glyph';
 import { useHomeUi } from '@/components/chrome/ScopeBar';
 import { BUILDINGS, PROJECT, ZONES, type Zone } from '@/model/central/project';
+import { FIRE_DRILL_BUILDINGS } from '@/model/site';
 import { ASSETS, KINDS, countOf, type Domain } from '@/model/central/assets';
 import { useFleet } from '@/model/central/useFleet';
 import { useScopeStore } from '@/sim/scope';
@@ -27,7 +28,8 @@ export default function SiteScreen() {
   const setScope = useScopeStore((s) => s.setScope);
   const [hover, setHover] = useState<Zone | null>(null);
   const { snap } = useFleet();
-  const fireZone = useScenario((s) => (s.fire.active ? s.fire.zone : null));
+  const fireActive = useScenario((s) => s.fire.active);
+  const fireIds: string[] = fireActive ? FIRE_DRILL_BUILDINGS : [];
   const mains = useScenario((s) => s.mains.failed);
 
   const zoneAlarm = (z: Zone) => {
@@ -73,7 +75,7 @@ export default function SiteScreen() {
         <path
           d={basement.outline}
           fill={scope === 'bs' ? 'rgba(157,120,255,0.10)' : 'rgba(157,120,255,0.03)'}
-          stroke={zoneStroke(basement, zoneAlarm(basement), fireZone, scope)}
+          stroke={zoneStroke(basement, zoneAlarm(basement), fireIds, scope)}
           strokeWidth={scope === 'bs' ? 2.5 : 1.5}
           strokeDasharray="10 8"
           onClick={() => pick(basement)}
@@ -97,8 +99,8 @@ export default function SiteScreen() {
           const al = zoneAlarm(z);
           const on = scope === z.id;
           const lit = on || hover?.id === z.id;
-          const stroke = zoneStroke(z, al, fireZone, scope);
-          const fire = fireZone === z.id;
+          const stroke = zoneStroke(z, al, fireIds, scope);
+          const fire = fireIds.includes(z.id);
           return (
             <g
               key={z.id}
@@ -126,14 +128,14 @@ export default function SiteScreen() {
         )}
       </motion.svg>
 
-      <AnimatePresence>{hover && <ZoneTip z={hover} selected={scope === hover.id} />}</AnimatePresence>
+      <AnimatePresence>{hover && <ZoneTip key={hover.id} z={hover} selected={scope === hover.id} />}</AnimatePresence>
       <AnimatePresence>{kpis && <ExecOverlay />}</AnimatePresence>
     </>
   );
 }
 
-function zoneStroke(z: Zone, al: { crit: number; major: number }, fireZone: string | null, scope: string) {
-  if (fireZone === z.id) return RED;
+function zoneStroke(z: Zone, al: { crit: number; major: number }, fireIds: string[], scope: string) {
+  if (fireIds.includes(z.id)) return RED;
   if (al.crit) return RED;
   if (al.major) return AMBER;
   return scope === z.id ? VIOLET : 'rgba(157,120,255,0.55)';
@@ -217,19 +219,40 @@ function ZoneLabel({ z, al }: { z: Zone; al: { crit: number; major: number } }) 
   );
 }
 
+const TIP_W = 300;
+const TIP_H = 200;
+
+/** Where the hover card goes: beside the building's roof, inside the map area, below the header. */
+function tipPosition(z: Zone) {
+  const c = centroid(z.outline);
+  const roofY = c.y - (HEIGHT[z.id] ?? 0);
+  const right = c.x + 130;
+  const x = right + TIP_W <= 1530 ? right : c.x - 130 - TIP_W;
+  const y = Math.min(Math.max(roofY - TIP_H / 2, 210), 880 - TIP_H);
+  return z.id === 'bs' ? { x: 1180, y: 640 } : { x, y };
+}
+
 function ZoneTip({ z, selected }: { z: Zone; selected: boolean }) {
   const counts: [string, number][] = (['fahu', 'ahu', 'fcu', 'btuT', 'elv', 'gen', 'chiller', 'pef', 'sump'] as const)
     .map((k) => [KINDS[k].plural, ASSETS.filter((a) => a.zone === z.id && a.kind === k).length] as [string, number])
     .filter((x) => x[1] > 0)
-    .slice(0, 5);
+    .slice(0, 4);
+  const pos = tipPosition(z);
   return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pf-panel pf-panel-solid pointer-events-none absolute z-20 w-[290px] -translate-x-1/2 -translate-y-full px-[16px] py-[12px]" style={{ left: z.anchor.x, top: z.anchor.y - 14 }}>
-      <p className="flex items-center justify-between text-[17px] font-medium text-white">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className="pf-panel pf-panel-solid pointer-events-none absolute z-30 px-[18px] py-[14px]"
+      style={{ left: pos.x, top: pos.y, width: TIP_W }}
+    >
+      <p className="flex items-center justify-between text-[18px] font-medium text-white">
         {z.label}
-        <span className="rounded-[8px] border border-accent/40 bg-accent/10 px-[7px] text-[11px] text-accent">{ASSETS.filter((a) => a.zone === z.id).length} assets</span>
+        <span className="rounded-[8px] border border-accent/40 bg-accent/10 px-[8px] text-[12px] text-accent">{ASSETS.filter((a) => a.zone === z.id).length} assets</span>
       </p>
-      <p className="mt-[3px] text-[12px] text-ink-3">{z.note}</p>
-      <ul className="mt-[8px] space-y-[3px] text-[12px] text-ink-2">
+      <p className="mt-[4px] text-[13px] leading-snug text-ink-3">{z.note}</p>
+      <ul className="mt-[10px] space-y-[5px] text-[13px] text-ink-2">
         {counts.map(([l, n]) => (
           <li key={l} className="flex justify-between">
             <span>{l}</span>
@@ -237,7 +260,7 @@ function ZoneTip({ z, selected }: { z: Zone; selected: boolean }) {
           </li>
         ))}
       </ul>
-      <p className="mt-[6px] text-[12px] font-medium text-accent">{selected ? 'Click again for the entire project' : 'Click to scope every KPI to it'}</p>
+      <p className="mt-[10px] text-[13px] font-medium text-accent">{selected ? 'Click again for the entire project' : 'Click to show its KPIs'}</p>
     </motion.div>
   );
 }
@@ -246,13 +269,15 @@ function ZoneTip({ z, selected }: { z: Zone; selected: boolean }) {
 
 const DOMAINS: { id: Domain; label: string; to: string }[] = [
   { id: 'hvac', label: 'HVAC', to: '/hvac/plant' },
-  { id: 'vent', label: 'Ventilation & car park', to: '/hvac/carpark' },
-  { id: 'safety', label: 'Life safety', to: '/safety/fire' },
-  { id: 'electric', label: 'Electrical', to: '/electric/mv' },
+  { id: 'vent', label: 'Ventilation & car park', to: '/hvac/ventilation' },
+  { id: 'safety', label: 'Life safety', to: '/fire/system' },
+  { id: 'electric', label: 'Electrical', to: '/electric/transformers' },
   { id: 'metering', label: 'Metering', to: '/metering/btu' },
-  { id: 'transport', label: 'Lifts & escalators', to: '/facilities/transport' },
-  { id: 'drainage', label: 'Drainage', to: '/facilities/drainage' },
-];
+  { id: 'transport', label: 'Lifts & escalators', to: '/maintenance/lifts' },
+  { id: 'drainage', label: 'Drainage', to: '/wastewater/submersible' },
+]
+
+const KPI_LINKS: Record<string, string> = { 'EX-01': '/maintenance/mechanical', 'EX-06': '/fire/smoke', 'EX-02': '/hvac/plant', 'EX-07': '/metering/energy', 'EX-03': '/metering/btu', 'EX-05': '/hvac/fcu', 'EX-09': '/maintenance/lifts' };
 
 function ExecOverlay() {
   const W = (1816 - 3 * 24) / 4;
@@ -262,16 +287,16 @@ function ExecOverlay() {
       <Panel frame={{ x: 52, y: 206, w: 310, h: 300 }} index={3} icon={<Glyph id="building" size={18} color="#ffffff" />} title={PROJECT.name} subtitle={PROJECT.location}>
         <Glance />
       </Panel>
-      <KpiTile id="EX-01" frame={{ x: 52, y: 526, w: 310, h: 130 }} index={4} />
-      <KpiTile id="EX-06" frame={{ x: 52, y: 676, w: 310, h: 130 }} index={5} />
+      <KpiTile id="EX-01" to="/maintenance/mechanical" frame={{ x: 52, y: 526, w: 310, h: 130 }} index={4} />
+      <KpiTile id="EX-06" to="/fire/smoke" frame={{ x: 52, y: 676, w: 310, h: 130 }} index={5} />
 
       <Panel frame={{ x: 1558, y: 206, w: 310, h: 450 }} index={6} title="Alarms by System" subtitle="Click a system to open it">
         <AlarmsBySystem />
       </Panel>
-      <KpiTile id="EX-02" frame={{ x: 1558, y: 676, w: 310, h: 130 }} index={7} />
+      <KpiTile id="EX-02" to="/hvac/plant" frame={{ x: 1558, y: 676, w: 310, h: 130 }} index={7} />
 
       {['EX-07', 'EX-03', 'EX-05', 'EX-09'].map((id, i) => (
-        <KpiTile key={id} id={id} frame={bottom[i]} index={8 + i} />
+        <KpiTile key={id} id={id} to={KPI_LINKS[id]} frame={bottom[i]} index={8 + i} />
       ))}
     </motion.div>
   );

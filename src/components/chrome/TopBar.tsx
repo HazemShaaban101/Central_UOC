@@ -32,7 +32,7 @@ export function TopBar() {
             glyph={s.glyph}
             label={s.label}
             active={activeSystem === s.id}
-            alert={s.id === 'safety' && fireActive}
+            alert={s.id === 'fire' && fireActive}
             onClick={() => navigate(systemPath(s))}
           />
         ))}

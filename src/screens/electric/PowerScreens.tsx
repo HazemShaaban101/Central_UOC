@@ -67,7 +67,7 @@ export function DrillControl({ compact }: { compact?: boolean }) {
         : `Essential board on generators · ${mmss(since)}`
     : phase === 'coolDown'
       ? `Utility restored · generators cooling down (${Math.ceil(60 - since)} s)`
-      : 'Utility healthy';
+      : 'Utility healthy · both 22 kV incomers live';
   return (
     <div className={compact ? 'flex items-center gap-[14px]' : 'flex h-full flex-col justify-center gap-[14px] px-[22px] pb-[14px]'}>
       <span className="flex items-center gap-[10px] text-[15px]" style={{ color: mains.failed ? '#e0889b' : phase === 'coolDown' ? '#f0c3ab' : '#bbaacb' }}>
@@ -126,7 +126,7 @@ export function GeneratorsScreen() {
         const [text, tone] = PHASE_TAG[phase];
         const load = num(v.Load_Pct);
         return (
-          <AssetPanel key={g.tag} frame={cards[i]} index={4 + i} icon={icon} title={`${g.label} · ${g.ratedKva} kVA`} subtitle={`${g.tag} · Energy centre`} points={{ tag: g.tag, template: GENSET_TEMPLATE, values: v }}>
+          <AssetPanel key={g.tag} frame={cards[i]} index={4 + i} icon={icon} title={`${g.label} · ${g.ratedKva} kVA`} subtitle={`${g.tag} · Basement 01`} points={{ tag: g.tag, template: GENSET_TEMPLATE, values: v }}>
             <div className="absolute inset-x-[18px] bottom-[14px] top-[2px] flex flex-col gap-[12px]">
               <div className="flex flex-wrap items-center gap-[8px]">
                 <Tag tone={tone}>{text}</Tag>
