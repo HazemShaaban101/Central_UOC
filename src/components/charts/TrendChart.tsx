@@ -88,7 +88,8 @@ export function TrendChart({ data, yTitle, xTitle = 'Time (hrs)', unit = '', dec
   const ticks = useMemo(() => Array.from({ length: 5 }, (_, i) => bottom + ((top - bottom) * i) / 4), [top, bottom]);
   const tickStep = (top - bottom) / 4;
   const tickDecimals = Number.isInteger(Math.round(tickStep * 1e6) / 1e6) ? 0 : Number.isInteger(Math.round(tickStep * 10 * 1e6) / 1e6) ? 1 : 2;
-  const every = Math.ceil(data.length / 24);
+  // About one label per 70 px, so the axis never runs together on narrow cards.
+  const every = Math.max(1, Math.ceil(data.length / Math.max(2, Math.floor(plotW / 70))));
   const ready = width > 0 && data.length > 1;
 
   return (

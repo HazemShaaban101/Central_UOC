@@ -51,7 +51,7 @@
 | OP-17 | Security Events Today | Operations | Assumed · system by others | Trend only | Daily |
 | MT-01 | Plant Run Hours vs Service | Maintenance | Proven · BMS integration | Serviced before interval | Daily |
 | MT-02 | Trips Today | Maintenance | Proven · BMS hardwired I/O | Trend down | Live · per 1,000 run h monthly |
-| MT-03 | Mean Time To Repair | Maintenance | Assumed · system by others | ≤ 8 h (P2) | Weekly |
+| MT-03 | Mean Time To Repair | Maintenance | Assumed · system by others | ≤ 24 h (all priorities) | Weekly |
 | MT-04 | Open Work Orders | Maintenance | Assumed · system by others | Backlog ≤ 1 week | Live |
 | MT-05 | Sump Pump Starts | Maintenance | Calculated | ≤ 20 per day | Daily |
 | MT-06 | Duty Rotation Balance | Maintenance | Proven · BMS integration | ≤ 10 % | Weekly |
@@ -399,7 +399,7 @@
 - **Formula:** `mean(closed − created)`
 - **Source points:** `CAFM work orders`
 - **Data tier:** Assumed · system by others
-- **Target:** ≤ 8 h (P2) · **Frequency:** Weekly
+- **Target:** ≤ 24 h (all priorities) · **Frequency:** Weekly
 - **SOPs acting on it:** SOP-FM-01 Corrective work-order lifecycle
 
 ### MT-04 · Open Work Orders

@@ -20,12 +20,12 @@ export function TopBar() {
   return (
     <header className="absolute inset-x-0 top-0 z-[45] h-[150px]">
       <span aria-hidden className="absolute inset-x-[-2000px] top-[-2000px] h-[2141px] border-b" style={{ background: 'linear-gradient(180deg, rgba(14,10,20,0.78), rgba(6,4,10,0.6))', borderColor: 'var(--pf-line)' }} />
-      {/* Centred in the space between the screen edge and the system navigation (which starts at x = 474). */}
-      <div className="absolute left-0 top-0 flex h-[150px] w-[474px] items-center justify-center">
+      {/* Centred in the space between the screen edge and the system navigation (which starts at x = 420). */}
+      <div className="absolute left-0 top-0 flex h-[150px] w-[420px] items-center justify-center">
         <Wordmark />
       </div>
 
-      <nav className="absolute left-[474px] top-[26px] flex" aria-label="Systems">
+      <nav className="absolute left-[420px] top-[26px] flex" aria-label="Systems">
         {SYSTEMS.map((s) => (
           <NavBadge
             key={s.id}
@@ -54,7 +54,7 @@ function Clock() {
   const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   const [wd, ...rest] = date.split(', ');
   return (
-    <div className="ml-[36px] flex flex-col items-end">
+    <div className="ml-[28px] flex flex-col items-end">
       <div className="flex items-center gap-[12px] text-[19px] font-medium tabular-nums tracking-[0.5px] text-accent">
         <ClockIcon size={22} className="text-white" />
         <span className="min-w-[106px] text-right">{time}</span>
@@ -72,7 +72,7 @@ function Weather() {
         <CloudSunIcon size={26} />
         <span>{value}°C</span>
       </div>
-      <span className="mt-[8px] text-[13px] tracking-[1.2px] text-ink-3">{BRAND.location.toUpperCase()}</span>
+      <span className="mt-[8px] text-[13px] tracking-[1.2px] text-ink-3">{BRAND.city.toUpperCase()}</span>
     </div>
   );
 }

@@ -55,36 +55,62 @@ export function StatusTag({ s }: { s: Status }) {
 }
 
 const SEV_TONE: Record<AssetAlarm['severity'], TagTone> = { critical: 'bad', major: 'warn', minor: 'info' };
-export const SevTag = ({ s }: { s: AssetAlarm['severity'] }) => <Tag tone={SEV_TONE[s]}>{s === 'critical' ? 'P1 · Critical' : s === 'major' ? 'P2 · Major' : 'P3 · Minor'}</Tag>;
+export const SevTag = ({ s }: { s: AssetAlarm['severity'] }) => <Tag tone={SEV_TONE[s]}>{s === 'critical' ? 'P1' : s === 'major' ? 'P2' : 'P3'}</Tag>;
 
 /* ================================================================================================
- * KPI tile: one KPI from the register, live, with its tier and target.
+ * Tiles: a label, one big value, one line of context. Nothing else.
  * ============================================================================================== */
 
-export function KpiTile({ id, frame, index = 0, big }: { id: string; frame: PanelProps['frame']; index?: number; big?: boolean }) {
+export function StatTile({ frame, index = 0, label, value, unit, tone = 'neutral', note, tier, onClick, hint }: { frame: PanelProps['frame']; index?: number; label: string; value: ReactNode; unit?: string; tone?: Tone; note?: ReactNode; tier?: SourceTier; onClick?: () => void; hint?: string }) {
+  const color = tone === 'warn' || tone === 'bad' ? TONE_COLOR[tone] : '#ffffff';
+  const f = frame!;
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: 0.06 + index * 0.05, ease: [0.22, 1, 0.36, 1] }}
+      className={`pf-panel absolute flex flex-col justify-between px-[22px] pb-[16px] pt-[16px] ${onClick ? 'pf-panel-link' : ''}`}
+      style={{ left: f.x, top: f.y, width: f.w, height: f.h }}
+      onClick={onClick}
+      title={hint}
+    >
+      <div className="flex items-center gap-[8px]">
+        <span className="truncate text-[16px] text-ink-2">{label}</span>
+        {tier && <span className="ml-auto h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: TIERS[tier].color }} title={TIERS[tier].label} />}
+      </div>
+      <div className="flex items-baseline gap-[8px]">
+        <span className="inline-flex items-center gap-[10px] text-[40px] font-medium leading-none tabular-nums" style={{ color, letterSpacing: '-0.02em' }}>
+          {(tone === 'warn' || tone === 'bad') && <StatusIcon tone={tone} size={24} />}
+          {value}
+        </span>
+        {unit && <span className="text-[17px] text-ink-3">{unit}</span>}
+      </div>
+      <p className="truncate text-[13px] leading-[16px] text-[#a998ba]">{note ?? ' '}</p>
+    </motion.section>
+  );
+}
+
+/** One KPI from the register as a tile; clicking opens its definition. */
+export function KpiTile({ id, frame, index = 0 }: { id: string; frame: PanelProps['frame']; index?: number; big?: boolean }) {
   const k = kpiById(id);
   const { kpi } = useFleet();
   const r = k.compute(kpi);
   const navigate = useNavigate();
-  const color = r.tone === 'warn' || r.tone === 'bad' ? TONE_COLOR[r.tone] : '#ffffff';
   const numeric = r.value !== null && /^[\d.,]+/.test(r.text);
   const unit = numeric ? r.text.replace(/^[\d.,]+\s?/, '') : '';
   return (
-    <Panel frame={frame} index={index} title={k.name} subtitle={`${k.id} · target ${k.target}`} onClick={() => navigate(`/command/kpis?id=${k.id}`)} hint="Open in the KPI register">
-      <div className="absolute inset-x-[18px] bottom-[10px] top-0 flex flex-col justify-end">
-        <div className="flex items-end gap-[8px]">
-          <span className="inline-flex items-center gap-[10px] font-medium leading-none tabular-nums" style={{ fontSize: big ? 44 : 36, color, letterSpacing: '-0.02em' }}>
-            {(r.tone === 'warn' || r.tone === 'bad') && <StatusIcon tone={r.tone} size={big ? 30 : 24} />}
-            {numeric ? <AnimatedNumber value={r.value!} decimals={(r.text.split(' ')[0].split('.')[1] ?? '').length} /> : r.text}
-          </span>
-          {unit && <span className="pb-[4px] text-[16px] text-ink-3">{unit}</span>}
-          <span className="ml-auto pb-[2px]">
-            <TierBadge tier={k.tier} />
-          </span>
-        </div>
-        <p className="mt-[6px] truncate text-[13px] leading-[16px] text-[#b09dc1]">{r.note}</p>
-      </div>
-    </Panel>
+    <StatTile
+      frame={frame}
+      index={index}
+      label={k.name}
+      tier={k.tier}
+      tone={r.tone}
+      value={numeric ? <AnimatedNumber value={r.value!} decimals={(r.text.split(' ')[0].split('.')[1] ?? '').length} /> : r.text}
+      unit={unit}
+      note={r.note}
+      onClick={() => navigate(`/command/kpis?id=${k.id}`)}
+      hint={`${k.id} · target ${k.target} · open in the KPI register`}
+    />
   );
 }
 
@@ -231,30 +257,30 @@ const ORDER: Record<Status, number> = { alarm: 0, fault: 1, offline: 2, manual: 
 export function FleetTable({ rows, extra = [], limit = 400, sortProblems = true }: { rows: FleetRow[]; extra?: Column<FleetRow>[]; limit?: number; sortProblems?: boolean }) {
   const open = useDrawer((s) => s.open);
   const sorted = sortProblems ? [...rows].sort((x, y) => ORDER[x.s.status] - ORDER[y.s.status] || x.a.label.localeCompare(y.a.label, 'en', { numeric: true })) : rows;
+  const multiZone = new Set(rows.map((r) => r.a.zone)).size > 1;
   return (
     <DataTable
-      dense
       rows={sorted.slice(0, limit)}
       rowKey={(r) => r.a.tag}
       onRowClick={(r) => open(r.a.tag)}
       highlight={(r) => (r.s.alarm?.severity === 'critical' ? 'alarm' : r.s.alarm?.severity === 'major' ? 'warn' : null)}
       columns={[
-        { key: 'tag', header: 'Asset', width: 150, render: (r) => <span className="text-white">{r.a.label}</span> },
-        { key: 'zone', header: 'Location', width: 80, render: (r) => zoneById(r.a.zone)?.short },
-        { key: 'st', header: 'Status', width: 112, render: (r) => <StatusTag s={r.s.status} /> },
-        { key: 'rd', header: 'Reading', render: (r) => r.s.reading },
+        { key: 'tag', header: 'Asset', width: 170, render: (r) => <span className="text-white">{r.a.label}</span> },
+        ...(multiZone ? [{ key: 'zone', header: 'Zone', width: 70, render: (r: FleetRow) => zoneById(r.a.zone)?.short }] : []),
+        { key: 'st', header: 'Status', width: 120, render: (r) => <StatusTag s={r.s.status} /> },
+        { key: 'rd', header: 'Reading', width: '1fr', render: (r) => r.s.reading },
         ...extra,
-        { key: 'al', header: 'Alarm → SOP', width: 300, render: (r) => (r.s.alarm ? <span className={r.s.alarm.severity === 'critical' ? 'text-alarm-soft' : r.s.alarm.severity === 'major' ? 'text-warn' : 'text-ink-2'}>{r.s.alarm.text} <span className="text-ink-4">· {r.s.alarm.sop}</span></span> : <span className="text-ink-4">—</span>) },
+        { key: 'al', header: 'Alarm', width: '1.3fr', render: (r) => (r.s.alarm ? <span className={r.s.alarm.severity === 'critical' ? 'text-alarm-soft' : r.s.alarm.severity === 'major' ? 'text-warn' : 'text-ink-2'}>{r.s.alarm.text}</span> : <span className="text-ink-4">—</span>) },
       ]}
     />
   );
 }
 
 /** A panel holding a fleet table, with a count in the title. */
-export function FleetPanel({ title, subtitle, rows, frame, index, extra, icon }: { title: string; subtitle?: string; rows: FleetRow[]; frame: PanelProps['frame']; index?: number; extra?: Column<FleetRow>[]; icon?: ReactNode }) {
+export function FleetPanel({ title, subtitle, rows, frame, index, extra, icon, action }: { title: string; subtitle?: string; rows: FleetRow[]; frame: PanelProps['frame']; index?: number; extra?: Column<FleetRow>[]; icon?: ReactNode; action?: ReactNode }) {
   const problems = rows.filter((r) => r.s.alarm).length;
   return (
-    <Panel frame={frame} index={index} icon={icon} title={`${title} · ${rows.length}`} subtitle={subtitle ?? `${problems} with an active alarm · click a row for its live points and SOP`}>
+    <Panel frame={frame} index={index} icon={icon} action={action} title={`${title} · ${rows.length}`} subtitle={subtitle ?? `${problems} in alarm · click a row for details`}>
       <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
         <FleetTable rows={rows} extra={extra} />
       </div>
@@ -327,15 +353,13 @@ export function AlarmList({ filter, compact }: { filter?: (a: Asset) => boolean;
   const navigate = useNavigate();
   return (
     <DataTable
-      dense
       rows={alarms}
       rowKey={(r) => r.a.tag}
       onRowClick={(r) => open(r.a.tag)}
       highlight={(r) => (r.al.severity === 'critical' ? 'alarm' : null)}
       columns={[
-        { key: 'sev', header: 'Priority', width: 128, render: (r) => <SevTag s={r.al.severity} /> },
-        { key: 'asset', header: 'Asset', width: compact ? 130 : 150, render: (r) => <span className="text-white">{r.a.label}</span> },
-        ...(compact ? [] : [{ key: 'zone', header: 'Location', width: 80, render: (r: { a: Asset }) => zoneById(r.a.zone)?.short }]),
+        { key: 'sev', header: 'Pri.', width: 64, render: (r) => <SevTag s={r.al.severity} /> },
+        { key: 'asset', header: 'Asset', width: compact ? 140 : 170, render: (r) => <span className="text-white">{r.a.label}</span> },
         { key: 'text', header: 'Alarm', render: (r) => r.al.text },
         {
           key: 'sop',

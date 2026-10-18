@@ -11,7 +11,7 @@ import { zoneById } from '@/model/central/project';
 import { useFleet } from '@/model/central/useFleet';
 import { useScenario } from '@/sim/scenario';
 import { DrillControl } from '@/screens/electric/PowerScreens';
-import { Big, FleetPanel, KpiTile, StatusRing, TierBadge, ZoneBars, useDrawer, useFleetRows } from '@/screens/central/kit';
+import { FleetPanel, KpiTile, StatTile, TierBadge, ZoneBars, useDrawer, useFleetRows } from '@/screens/central/kit';
 import { fmt } from '@/utils/format';
 
 const n = (x: unknown) => (typeof x === 'number' ? x : 0);
@@ -21,23 +21,17 @@ const n = (x: unknown) => (typeof x === 'number' ? x : 0);
  * ============================================================================================== */
 
 export function MvScreen() {
-  const tiles = row(208, 150, 4);
-  const [bars, table] = row(383, 595, [1, 1.6]);
+  const tiles = row(208, 130, 4);
+  const [bars, table] = row(363, 615, [1, 1.6]);
   const rows = useFleetRows(['tr', 'rmu']);
   const tr = rows.filter((r) => r.a.kind === 'tr');
   const hot = Math.max(0, ...tr.map((r) => n(r.s.values.Winding_Temp)));
   return (
     <>
       <KpiTile id="OP-12" frame={tiles[0]} index={0} big />
-      <Panel frame={tiles[1]} index={1} title="Hottest Winding" subtitle="Temperature relay · Modbus RTU">
-        <Big value={hot} unit="°C" tone={hot > 100 ? 'warn' : 'neutral'} note="Alarm stage 100 °C (assumed relay setting)" />
-      </Panel>
-      <Panel frame={tiles[2]} index={2} title="Transformers" subtitle="22 units across 7 buildings + basement">
-        <Big value={`${tr.filter((r) => r.s.status === 'run').length} / ${tr.length}`} note="Energised" />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Ring Main Units" subtitle="22 RMUs · SF6 and earth-fault indication">
-        <Big value={rows.filter((r) => r.a.kind === 'rmu' && r.s.alarm).length} tone={rows.some((r) => r.a.kind === 'rmu' && r.s.alarm) ? 'warn' : 'neutral'} note="RMUs with an alarm" />
-      </Panel>
+      <StatTile frame={tiles[1]} index={1} label="Hottest Winding" value={hot} unit="°C" tone={hot > 100 ? 'warn' : 'neutral'} note="Alarm at 100 °C" />
+      <StatTile frame={tiles[2]} index={2} label="Transformers" value={`${tr.filter((r) => r.s.status === 'run').length} / ${tr.length}`} note="Energised" />
+      <StatTile frame={tiles[3]} index={3} label="Ring Main Units" value={rows.filter((r) => r.a.kind === 'rmu' && r.s.alarm).length} tone={rows.some((r) => r.a.kind === 'rmu' && r.s.alarm) ? 'warn' : 'neutral'} note="RMUs with an alarm" />
       <Panel frame={bars} index={4} title="Transformer Loading per Zone" subtitle="Average and peak loading (%)">
         <ZoneBars kinds={['tr']} a={(r) => (r.length ? r.reduce((a, x) => a + n(x.s.values.Load_Pct), 0) / r.length : 0)} b={(r) => Math.max(0, ...r.map((x) => n(x.s.values.Load_Pct)))} names={{ a: 'Average', b: 'Peak' }} yTitle="Load (%)" unit="%" />
       </Panel>
@@ -47,29 +41,27 @@ export function MvScreen() {
 }
 
 export function DistributionScreen() {
-  const tiles = row(208, 150, 4);
-  const [bars, table] = row(383, 595, [1, 1.6]);
+  const tiles = row(208, 130, 4);
+  const [bars, table] = row(363, 615, [1, 1.6]);
   const rows = useFleetRows(['mdb', 'emdb', 'mcc', 'emcc']);
   const maxThd = Math.max(0, ...rows.map((r) => n(r.s.values.THD_I)));
   return (
     <>
       <KpiTile id="EX-07" frame={tiles[0]} index={0} big />
       <KpiTile id="OP-13" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Worst Current THD" subtitle="MCC boards carry the VSD loads">
-        <Big value={maxThd.toFixed(1)} unit="%" tone={maxThd > 9.5 ? 'warn' : 'neutral'} note="Investigate above 9.5 % (SOP-EL-05)" />
-      </Panel>
+      <StatTile frame={tiles[2]} index={2} label="Worst Current THD" value={maxThd.toFixed(1)} unit="%" tone={maxThd > 9.5 ? 'warn' : 'neutral'} note="Investigate above 9.5 %" />
       <KpiTile id="EX-14" frame={tiles[3]} index={3} />
-      <Panel frame={bars} index={4} title="Load per Zone" subtitle="MDB vs MCC power (kW)">
+      <Panel frame={bars} index={4} title="Load per Zone" subtitle="MDB vs MCC (kW)">
         <ZoneBars kinds={['mdb', 'mcc']} a={(r) => r.filter((x) => x.a.kind === 'mdb').reduce((a, x) => a + n(x.s.values.kW), 0)} b={(r) => r.filter((x) => x.a.kind === 'mcc').reduce((a, x) => a + n(x.s.values.kW), 0)} names={{ a: 'MDB', b: 'MCC' }} yTitle="Power (kW)" unit="kW" />
       </Panel>
-      <FleetPanel frame={table} index={5} title="Boards (Digital Power Meters)" subtitle="153 meters · Modbus RTU (DPMs by others) · click for V, I, kW, kWh, PF, THD" rows={rows} />
+      <FleetPanel frame={table} index={5} title="Boards (Digital Power Meters)" subtitle="Click a board for V, I, kW, PF and THD" rows={rows} />
     </>
   );
 }
 
 export function StandbyScreen() {
-  const tiles = row(208, 150, 4);
-  const [left, table] = row(383, 595, [1, 1.6]);
+  const tiles = row(208, 130, 4);
+  const [left, table] = row(363, 615, [1, 1.6]);
   const rows = useFleetRows(['gen', 'ats']);
   const gens = rows.filter((r) => r.a.kind === 'gen');
   const fuelMin = Math.min(100, ...gens.map((r) => n(r.s.values.Fuel_Level)));
@@ -77,44 +69,27 @@ export function StandbyScreen() {
   return (
     <>
       <KpiTile id="EX-08" frame={tiles[0]} index={0} big />
-      <Panel frame={tiles[1]} index={1} title="Generators Running" subtitle="19 sets · Modbus RTU">
-        <Big value={`${gens.filter((r) => r.s.values.Sts_Running).length} / ${gens.length}`} tone={mains ? 'warn' : 'neutral'} note={mains ? 'Utility failure — on load' : 'Standby (weekly test Tue 10:00)'} />
+      <StatTile frame={tiles[1]} index={1} label="Generators Running" value={`${gens.filter((r) => r.s.values.Sts_Running).length} / ${gens.length}`} tone={mains ? 'warn' : 'neutral'} note={mains ? 'Utility failure — on load' : 'Standby (weekly test Tue 10:00)'} />
+      <StatTile frame={tiles[2]} index={2} label="Lowest Day Tank" value={fuelMin} unit="%" tone={fuelMin < 40 ? 'warn' : 'neutral'} note="Order fuel below 40 %" />
+      <StatTile frame={tiles[3]} index={3} label="Transfer Switches" value={rows.filter((r) => r.a.kind === 'ats' && r.s.values.Position === 1).length} unit="on generator" tone={mains ? 'bad' : 'neutral'} note="Position from the ATS controller" />
+      <Panel frame={left} index={4} title="Generators per Building" subtitle="Installed vs ready in Auto">
+        <ZoneBars kinds={['gen']} a={(r) => r.length} b={(r) => r.filter((x) => x.s.values.Sts_Auto).length} names={{ a: 'Installed', b: 'Ready' }} yTitle="Sets" />
       </Panel>
-      <Panel frame={tiles[2]} index={2} title="Lowest Day Tank" subtitle="Fuel level">
-        <Big value={fuelMin} unit="%" tone={fuelMin < 40 ? 'warn' : 'neutral'} note="Order fuel below 40 % (SOP-EL-03)" />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Transfer Switches" subtitle="20 ATS">
-        <Big value={rows.filter((r) => r.a.kind === 'ats' && r.s.values.Position === 1).length} unit="on generator" tone={mains ? 'bad' : 'neutral'} note="Position from the ATS controller" />
-      </Panel>
-      <Panel frame={{ ...left, h: 230 }} index={4} title="Utility Failure Drill" subtitle="Runs SOP-EL-01 across every screen">
-        <div className="absolute inset-x-[18px] top-[10px]">
-          <DrillControl />
-        </div>
-      </Panel>
-      <Panel frame={{ ...left, y: left.y + 255, h: 340 }} index={5} title="Generator Status" subtitle="All sets in scope">
-        <StatusRing rows={gens} size={170} label="running" />
-      </Panel>
-      <FleetPanel frame={table} index={6} title="Generators & ATS" rows={rows} />
+      <FleetPanel frame={table} index={5} title="Generators & ATS" rows={rows} action={<DrillControl compact />} />
     </>
   );
 }
 
 export function UpsScreen() {
-  const tiles = row(208, 150, 3);
-  const [table] = row(383, 595, 1);
+  const tiles = row(208, 130, 3);
+  const [table] = row(363, 615, 1);
   const rows = useFleetRows(['ups'], { plantWide: true });
   const minAut = Math.min(999, ...rows.map((r) => n(r.s.values.Autonomy_Min)));
   return (
     <>
-      <Panel frame={tiles[0]} index={0} title="UPS Online" subtitle="9 units · Basement 01 · Modbus TCP">
-        <Big value={`${rows.filter((r) => !r.s.values.On_Battery).length} / ${rows.length}`} tone={rows.some((r) => r.s.values.On_Battery) ? 'bad' : 'neutral'} note="Units on mains (not battery)" />
-      </Panel>
-      <Panel frame={tiles[1]} index={1} title="Lowest Autonomy" subtitle="Estimated runtime on battery">
-        <Big value={minAut} unit="min" tone={minAut < 10 ? 'bad' : minAut < 20 ? 'warn' : 'neutral'} note="Orderly shutdown below 10 min (SOP-EL-06)" />
-      </Panel>
-      <Panel frame={tiles[2]} index={2} title="Highest Load" subtitle="Output load">
-        <Big value={Math.max(0, ...rows.map((r) => n(r.s.values.Load_Pct)))} unit="%" note="Keep below 80 % for N+1" />
-      </Panel>
+      <StatTile frame={tiles[0]} index={0} label="UPS Online" value={`${rows.filter((r) => !r.s.values.On_Battery).length} / ${rows.length}`} tone={rows.some((r) => r.s.values.On_Battery) ? 'bad' : 'neutral'} note="Units on mains (not battery)" />
+      <StatTile frame={tiles[1]} index={1} label="Lowest Autonomy" value={minAut} unit="min" tone={minAut < 10 ? 'bad' : minAut < 20 ? 'warn' : 'neutral'} note="Shutdown below 10 min" />
+      <StatTile frame={tiles[2]} index={2} label="Highest Load" value={Math.max(0, ...rows.map((r) => n(r.s.values.Load_Pct)))} unit="%" note="Keep below 80 % for N+1" />
       <FleetPanel frame={table} index={3} title="UPS Units" rows={rows} />
     </>
   );
@@ -125,8 +100,8 @@ export function UpsScreen() {
  * ============================================================================================== */
 
 export function CoolingMetersScreen() {
-  const tiles = row(208, 150, 4);
-  const [bars, table] = row(383, 595, [1, 1.5]);
+  const tiles = row(208, 130, 4);
+  const [bars, table] = row(363, 615, [1, 1.5]);
   const { kpi } = useFleet();
   const meters = useFleetRows(['btuT', 'btuB']);
   const attention = useMemo(() => meters.filter((r) => r.s.alarm), [meters]);
@@ -135,60 +110,16 @@ export function CoolingMetersScreen() {
     <>
       <KpiTile id="EX-04" frame={tiles[0]} index={0} big />
       <KpiTile id="EX-03" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Metered Cooling Now" subtitle="Σ meter power in scope">
-        <Big value={fmt(kw / 3.517)} unit="TR" note={`${fmt(kw)} kW thermal`} />
+      <StatTile frame={tiles[2]} index={2} label="Metered Cooling Now" value={fmt(kw / 3.517)} unit="TR" note={`${fmt(kw)} kW thermal`} />
+      <StatTile frame={tiles[3]} index={3} label="Low ΔT Meters" value={meters.filter((r) => r.a.kind === 'btuT' && n(r.s.values.DeltaT) > 0 && n(r.s.values.DeltaT) < 3.6).length} note="Below 3.6 K" />
+      <Panel frame={bars} index={4} title="Cooling Power per Building" subtitle="Energy valves vs bulk meters (kW)">
+        <ZoneBars kinds={['btuT', 'btuB']} zones={['b01', 'b02', 'b03', 'b04', 'b05', 'b06', 'b07']} a={(r) => r.filter((x) => x.a.kind === 'btuT').reduce((a, x) => a + n(x.s.values.Power_kW), 0)} b={(r) => r.filter((x) => x.a.kind === 'btuB').reduce((a, x) => a + n(x.s.values.Power_kW), 0)} names={{ a: 'Energy valves', b: 'Bulk meters' }} yTitle="kW" unit="kW" />
       </Panel>
-      <Panel frame={tiles[3]} index={3} title="Low ΔT Meters" subtitle="ΔT below 3.6 K (SOP-MT-02)">
-        <Big value={meters.filter((r) => r.a.kind === 'btuT' && n(r.s.values.DeltaT) > 0 && n(r.s.values.DeltaT) < 3.6).length} note="Tenants wasting pumping energy" />
-      </Panel>
-      <Panel frame={{ ...bars, h: 330 }} index={4} title="Cooling Power per Building" subtitle="Energy valves vs bulk meters (kW thermal)">
-        <ZoneBars kinds={['btuT', 'btuB']} zones={['b01', 'b02', 'b03', 'b04', 'b05', 'b06', 'b07']} a={(r) => r.filter((x) => x.a.kind === 'btuT').reduce((a, x) => a + n(x.s.values.Power_kW), 0)} b={(r) => r.filter((x) => x.a.kind === 'btuB').reduce((a, x) => a + n(x.s.values.Power_kW), 0)} names={{ a: 'SP90 energy valves', b: 'Kamstrup bulk' }} yTitle="kW" unit="kW" />
-      </Panel>
-      <Panel frame={{ ...bars, y: bars.y + 355, h: 240 }} index={5} title="Meter Inventory" subtitle="From the BTU BoQ per building" action={<TierBadge tier="bms" long />}>
-        <MeterInventory />
-      </Panel>
-      <FleetPanel frame={table} index={6} title="Meters Needing Attention" subtitle={`${attention.length} of ${meters.length} · offline, info code or low ΔT`} rows={attention} />
+      <FleetPanel frame={table} index={5} title="Meters Needing Attention" subtitle={`${attention.length} of ${meters.length} meters`} rows={attention} />
     </>
   );
 }
 
-function MeterInventory() {
-  const z = ['b01', 'b02', 'b03', 'b04', 'b05', 'b06', 'b07'];
-  return (
-    <table className="absolute inset-x-[18px] top-[0px] w-[calc(100%-36px)] text-[13px]">
-      <thead>
-        <tr className="text-left text-[11px] uppercase tracking-[0.1em] text-ink-3">
-          <th className="pb-[6px] font-bold">Meter</th>
-          {z.map((id) => (
-            <th key={id} className="pb-[6px] text-right font-bold">
-              {zoneById(id)?.short}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {(['btuT', 'btuB'] as const).map((k) => (
-          <tr key={k} className="border-t border-white/[0.06]">
-            <td className="py-[6px] text-ink-2">{k === 'btuT' ? 'SP90 energy valve' : 'Kamstrup KD'}</td>
-            {z.map((id) => (
-              <td key={id} className="text-right tabular-nums text-white">
-                {ASSETS.filter((a) => a.zone === id && a.kind === k).length}
-              </td>
-            ))}
-          </tr>
-        ))}
-        <tr className="border-t border-white/[0.12]">
-          <td className="py-[6px] text-ink-3">Total (EL)</td>
-          {z.map((id) => (
-            <td key={id} className="text-right tabular-nums text-accent">
-              {ASSETS.filter((a) => a.zone === id && (a.kind === 'btuT' || a.kind === 'btuB')).length}
-            </td>
-          ))}
-        </tr>
-      </tbody>
-    </table>
-  );
-}
 
 /* ================================================================================================
  * Metering › Cooling Billing (billing system by others; meter readings proven)
@@ -198,8 +129,8 @@ const TARIFF_EGP_PER_KWH_TH = 1.15; // assumed chilled-water energy tariff
 const CAPACITY_EGP_PER_TR = 210; // assumed monthly capacity charge per contracted TR
 
 export function CoolingBillingScreen() {
-  const tiles = row(208, 150, 4);
-  const [table, side] = row(383, 595, [1.75, 1]);
+  const tiles = row(208, 130, 4);
+  const [table, side] = row(363, 615, [1.75, 1]);
   const { snap, scope, now } = useFleet(60_000);
   const open = useDrawer((s) => s.open);
   const day = new Date(now).getDate();
@@ -219,17 +150,11 @@ export function CoolingBillingScreen() {
   const gaps = bills.filter((b) => b.gap).length;
   return (
     <>
-      <Panel frame={tiles[0]} index={0} title="Billed to Date" subtitle={`${month} · day ${day}`}>
-        <Big value={fmt(total / 1000)} unit="k EGP" note="Energy + capacity charge (tariff assumed)" />
-      </Panel>
-      <Panel frame={tiles[1]} index={1} title="Metered Energy" subtitle="Σ SP90 registers, month to date">
-        <Big value={fmt(energy / 1000)} unit="MWh th" note={`${bills.length} tenant meters`} />
-      </Panel>
-      <Panel frame={tiles[2]} index={2} title="Bill Lines with Data Gap" subtitle="Meter offline now (SOP-MT-01)">
-        <Big value={gaps} tone={gaps ? 'warn' : 'neutral'} note="Back-filled from the meter register" />
-      </Panel>
+      <StatTile frame={tiles[0]} index={0} label="Billed to Date" value={fmt(total / 1000)} unit="k EGP" note={`${month} · tariff assumed`} />
+      <StatTile frame={tiles[1]} index={1} label="Metered Energy" value={fmt(energy / 1000)} unit="MWh th" note={`${bills.length} tenant meters`} />
+      <StatTile frame={tiles[2]} index={2} label="Bill Lines with Data Gap" value={gaps} tone={gaps ? 'warn' : 'neutral'} note="Back-filled from register" />
       <KpiTile id="EX-04" frame={tiles[3]} index={3} />
-      <Panel frame={table} index={4} title="Tenant Cooling Bills" subtitle="One line per SP90 energy valve · click for the meter's live points" action={<TierBadge tier="assumed" long />}>
+      <Panel frame={table} index={4} title="Tenant Cooling Bills" subtitle="One line per tenant meter · click for details" action={<TierBadge tier="assumed" />}>
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             dense
@@ -249,15 +174,7 @@ export function CoolingBillingScreen() {
           />
         </div>
       </Panel>
-      <Panel frame={{ ...side, h: 300 }} index={5} title="Billing Chain" subtitle="What is proven and what is assumed">
-        <ol className="absolute inset-x-[20px] top-[4px] space-y-[10px] text-[14px] text-ink-2">
-          <li className="flex gap-[8px]"><TierBadge tier="bms" /> SP90 / Kamstrup registers via Modbus RTU / MS-TP</li>
-          <li className="flex gap-[8px]"><TierBadge tier="aveva" /> AVEVA historian freezes month-end readings</li>
-          <li className="flex gap-[8px]"><TierBadge tier="assumed" /> Billing system (by others) applies tariffs</li>
-          <li className="flex gap-[8px]"><TierBadge tier="assumed" /> Tariff and contracts shown are placeholders</li>
-        </ol>
-      </Panel>
-      <Panel frame={{ ...side, y: side.y + 325, h: 270 }} index={6} title="Revenue Split" subtitle="Energy vs capacity charge">
+      <Panel frame={side} index={5} title="Revenue Split" subtitle="Energy vs capacity charge">
         <div className="flex h-full items-center gap-[24px] px-[20px] pb-[10px]">
           <RingGauge segments={[{ value: energy * TARIFF_EGP_PER_KWH_TH, color: '#9d78ff' }, { value: Math.max(0, total - energy * TARIFF_EGP_PER_KWH_TH), color: '#e4ccff' }]} value={`${fmt(total / 1_000_000, 2)}M`} unit="EGP" size={170} />
           <ul className="space-y-[10px] text-[14px] text-ink-2">
@@ -275,9 +192,9 @@ export function CoolingBillingScreen() {
  * ============================================================================================== */
 
 export function EnergyScreen() {
-  const tiles = row(208, 150, 4);
-  const [trend, split] = row(383, 330, [1.6, 1]);
-  const [bars] = row(738, 240, 1);
+  const tiles = row(208, 130, 4);
+  const [trend, split] = row(363, 370, [1.6, 1]);
+  const [bars] = row(758, 220, 1);
   const { kpi } = useFleet();
   const kw = electricalKw(kpi);
   const mcc = useMccKw();
@@ -286,11 +203,9 @@ export function EnergyScreen() {
       <KpiTile id="EX-07" frame={tiles[0]} index={0} big />
       <KpiTile id="EX-14" frame={tiles[1]} index={1} />
       <KpiTile id="EX-02" frame={tiles[2]} index={2} />
-      <Panel frame={tiles[3]} index={3} title="Motor Share of Demand" subtitle="MCC + EMCC ÷ MDB + EMDB incomers">
-        <Big value={kw ? Math.round((mcc / kw) * 100) : 0} unit="%" note="HVAC motors and plant" />
-      </Panel>
-      <TrendCard frame={trend} index={4} title="Electrical Demand" subtitle="MDB power meters · actual vs expected" sim="electric.demand" yTitle="Demand (MW)" decimals={2} />
-      <Panel frame={split} index={5} title="Demand by Incomer" subtitle="MDB vs EMDB · MCC / EMCC are fed from them">
+      <StatTile frame={tiles[3]} index={3} label="Motor Share of Demand" value={kw ? Math.round((mcc / kw) * 100) : 0} unit="%" note="MCC + EMCC share" />
+      <TrendCard frame={trend} index={4} title="Electrical Demand" subtitle="Actual vs expected" sim="electric.demand" yTitle="Demand (MW)" decimals={2} />
+      <Panel frame={split} index={5} title="Demand by Incomer" subtitle="MCC / EMCC are fed from these">
         <BoardSplit />
       </Panel>
       <Panel frame={bars} index={6} title="Demand per Building" subtitle="MDB vs EMDB (kW)">

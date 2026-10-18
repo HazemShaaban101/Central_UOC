@@ -6,4 +6,6 @@ export const BRAND = {
   name: 'Central Operations Center',
   project: 'Central',
   location: 'Fifth Settlement, New Cairo',
+  /** Short form for the header next to the weather. */
+  city: 'New Cairo',
 };

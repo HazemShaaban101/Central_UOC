@@ -27,7 +27,7 @@ export function NavBadge({ glyph, label, active, alert, onClick }: NavBadgeProps
   const hot = alert ? '#e59aaa' : '#9d78ff';
   const line = alert ? '#eaaab9' : active ? '#9d78ff' : '#593781';
   return (
-    <button type="button" onClick={onClick} className={`hud-badge i-${glyph} ${active ? 'is-active' : ''} relative flex w-[108px] flex-col items-center gap-[9px] bg-transparent p-0`} aria-current={active ? 'page' : undefined}>
+    <button type="button" onClick={onClick} className={`hud-badge i-${glyph} ${active ? 'is-active' : ''} relative flex w-[100px] flex-col items-center gap-[9px] bg-transparent p-0`} aria-current={active ? 'page' : undefined}>
       <svg viewBox="0 0 64 64" width={70} height={70} fill="none" overflow="visible">
         <defs>
           <linearGradient id={`${gid}-fill`} x1="0" y1="0" x2="0" y2="1">

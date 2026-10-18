@@ -498,10 +498,10 @@ export const KPIS: Kpi[] = [
   {
     id: 'MT-03', name: 'Mean Time To Repair', audience: 'Maintenance', domain: 'CAFM (assumed)',
     definition: 'Average time from WO creation to close (30 days).', formula: 'mean(closed − created)',
-    points: ['CAFM work orders'], tier: 'assumed', target: '≤ 8 h (P2)', frequency: 'Weekly',
+    points: ['CAFM work orders'], tier: 'assumed', target: '≤ 24 h (all priorities)', frequency: 'Weekly',
     compute: (c) => {
       const s = cafmStats(c.now, c.scope);
-      return { value: s.mttrH, text: fmt(s.mttrH, 1, ' h'), tone: toneLow(s.mttrH, 8, 12), note: 'rolling 30 days' };
+      return { value: s.mttrH, text: fmt(s.mttrH, 1, ' h'), tone: toneLow(s.mttrH, 24, 36), note: 'rolling 30 days' };
     },
   },
   {

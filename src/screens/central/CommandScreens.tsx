@@ -7,14 +7,14 @@ import { TONE_COLOR, type Tone } from '@/components/controls/Controls';
 import { StatusIcon } from '@/components/controls/StatusIcon';
 import { TrendCard } from '@/widgets/TrendCard';
 import { row } from '@/screens/layout';
-import { BUILDINGS, PROJECT, TIERS, ZONES, type SourceTier } from '@/model/central/project';
+import { BUILDINGS, TIERS, ZONES, type SourceTier } from '@/model/central/project';
 import { ASSETS, KINDS, type AssetKind } from '@/model/central/assets';
 import { KPIS, kpiById, type Audience, type Kpi } from '@/model/central/kpis';
 import { SOPS, sopById, type Sop, type SopCategory } from '@/model/central/sops';
 import { useFleet } from '@/model/central/useFleet';
 import { useScenario } from '@/sim/scenario';
 import { useScopeStore } from '@/sim/scope';
-import { AlarmList, KpiTile, TierBadge, useAlarms } from '@/screens/central/kit';
+import { AlarmList, KpiTile, StatTile, TierBadge, useAlarms } from '@/screens/central/kit';
 import { clsx } from '@/utils/clsx';
 
 const toneColor = (t: Tone) => (t === 'warn' || t === 'bad' ? TONE_COLOR[t] : '#ffffff');
@@ -37,22 +37,22 @@ function Chip({ on, children, onClick }: { on: boolean; children: React.ReactNod
  * ============================================================================================== */
 
 export function ExecutiveScreen() {
-  const tiles = row(208, 150, 5);
-  const [trend, table] = row(383, 330, [1, 1.25]);
-  const [score, risks] = row(738, 240, [1, 1.25]);
+  const tiles = row(208, 130, 4);
+  const [trend, table] = row(363, 360, [1, 1.25]);
+  const [score, risks] = row(748, 230, [1, 1.25]);
   return (
     <>
-      {['EX-01', 'EX-02', 'EX-05', 'EX-06', 'EX-08'].map((id, i) => (
-        <KpiTile key={id} id={id} frame={tiles[i]} index={i} big />
+      {['EX-01', 'EX-02', 'EX-05', 'EX-06'].map((id, i) => (
+        <KpiTile key={id} id={id} frame={tiles[i]} index={i} />
       ))}
-      <TrendCard frame={trend} index={5} title="Electrical Demand" subtitle="EX-07 · MDB power meters (AVEVA) · actual vs expected" sim="electric.demand" yTitle="Demand (MW)" decimals={2} />
-      <Panel frame={table} index={6} title="Building Scorecard" subtitle="Executive KPIs per building and basement · click a row to scope the platform">
+      <TrendCard frame={trend} index={5} title="Electrical Demand" subtitle="Actual vs expected" sim="electric.demand" yTitle="Demand (MW)" decimals={2} />
+      <Panel frame={table} index={6} title="Building Scorecard" subtitle="Click a row to focus the platform on it">
         <BuildingScorecard />
       </Panel>
-      <Panel frame={score} index={7} title="Executive KPI Scorecard" subtitle="All 14 executive KPIs · RAG against target">
+      <Panel frame={score} index={7} title="Executive KPI Scorecard" subtitle="Against target">
         <ExecScorecard />
       </Panel>
-      <Panel frame={risks} index={8} title="Top Risks Now" subtitle="Critical and major alarms · each opens its SOP">
+      <Panel frame={risks} index={8} title="Top Risks Now" subtitle="Click for details">
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <AlarmList compact />
         </div>
@@ -91,7 +91,7 @@ function BuildingScorecard() {
           { key: 'cf', header: 'Comfort', render: (r) => cell(r.cf) },
           { key: 'bl', header: 'Billing data', render: (r) => cell(r.bill) },
           { key: 'ls', header: 'Life safety', render: (r) => cell(r.ls) },
-          { key: 'al', header: 'Alarms', width: 150, render: (r) => <span style={{ color: toneColor(r.al.tone) }}>{r.al.note?.split(' · ').slice(0, 2).join(' · ')}</span> },
+          { key: 'al', header: 'Alarms', width: 120, render: (r) => <span style={{ color: toneColor(r.al.tone) }}>{r.al.note?.split(' · ')[0]}</span> },
         ]}
       />
     </div>
@@ -127,23 +127,23 @@ function ExecScorecard() {
  * ============================================================================================== */
 
 export function OperationsScreen() {
-  const tiles = row(208, 150, 5);
-  const [alarms, side] = row(383, 595, [1.55, 1]);
-  const queueH = 330;
+  const tiles = row(208, 130, 4);
+  const [alarms, side] = row(363, 615, [1.55, 1]);
+  const queueH = 370;
   return (
     <>
-      {['OP-01', 'OP-02', 'OP-03', 'OP-07', 'OP-08'].map((id, i) => (
+      {['OP-01', 'OP-02', 'OP-07', 'OP-08'].map((id, i) => (
         <KpiTile key={id} id={id} frame={tiles[i]} index={i} />
       ))}
-      <Panel frame={alarms} index={5} title="Active Alarms" subtitle="Every alarm in scope, highest priority first · row → live points, SOP button → procedure">
+      <Panel frame={alarms} index={5} title="Active Alarms" subtitle="Highest priority first · click for details">
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <AlarmList />
         </div>
       </Panel>
-      <Panel frame={{ ...side, h: queueH }} index={6} title="Work Queue by SOP" subtitle="Alarms grouped by the procedure that handles them">
+      <Panel frame={{ ...side, h: queueH }} index={6} title="Work Queue by SOP" subtitle="Alarms grouped by procedure">
         <SopQueue />
       </Panel>
-      <Panel frame={{ ...side, y: side.y + queueH + 25, h: side.h - queueH - 25 }} index={7} title="Drills & Scenarios" subtitle="Run a scenario to see cause-and-effect across every screen">
+      <Panel frame={{ ...side, y: side.y + queueH + 25, h: side.h - queueH - 25 }} index={7} title="Drills & Scenarios" subtitle="See cause-and-effect across every screen">
         <Drills />
       </Panel>
     </>
@@ -217,7 +217,6 @@ function Drills() {
           <button onClick={() => sc.triggerIntrusion(true)} className={`${btn} border-accent/40 text-accent hover:bg-accent/10`}>Forced door (SOP-SC-01)</button>
         )}
       </div>
-      <p className="text-[12px] leading-snug text-ink-4">Fire drill: smoke & pressurisation fans start, FAHUs in the building stop, lifts recall, PA plays evacuation. Utility failure: ATS → generators, UPS on battery, transformers de-energised.</p>
     </div>
   );
 }
@@ -235,7 +234,7 @@ export function KpiRegisterScreen() {
   const rows = KPIS.filter((k) => aud === 'All' || k.audience === aud);
   return (
     <>
-      <Panel frame={list} index={0} title={`KPI Register · ${rows.length}`} subtitle="Every KPI with its data basis · select one for its definition" action={<div className="flex gap-[6px]">{(['All', 'Executive', 'Operations', 'Maintenance'] as const).map((a) => <Chip key={a} on={aud === a} onClick={() => setAud(a)}>{a}</Chip>)}</div>}>
+      <Panel frame={list} index={0} title={`KPI Register · ${rows.length}`} subtitle="Select a KPI for its definition" action={<div className="flex gap-[6px]">{(['All', 'Executive', 'Operations', 'Maintenance'] as const).map((a) => <Chip key={a} on={aud === a} onClick={() => setAud(a)}>{a}</Chip>)}</div>}>
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             dense
@@ -247,8 +246,6 @@ export function KpiRegisterScreen() {
               { key: 'id', header: 'ID', width: 62, render: (k) => <span className="font-mono text-[12px] text-accent">{k.id}</span> },
               { key: 'n', header: 'KPI', render: (k) => <span className="text-white">{k.name}</span> },
               { key: 'a', header: 'For', width: 96, render: (k) => k.audience },
-              { key: 't', header: 'Data', width: 92, render: (k) => <TierBadge tier={k.tier} /> },
-              { key: 'g', header: 'Target', width: 130, render: (k) => <span className="text-ink-3">{k.target}</span> },
               {
                 key: 'v',
                 header: 'Now',
@@ -364,7 +361,7 @@ export function SopLibraryScreen() {
   const rows = SOPS.filter((s) => cat === 'All' || s.category === cat);
   return (
     <>
-      <Panel frame={list} index={0} title={`SOP Library · ${rows.length}`} subtitle="Alarm-driven SOPs run as AVEVA Work Task workflows" action={<div className="flex gap-[6px]">{(['All', 'Emergency', 'Alarm response', 'Routine', 'Administrative'] as const).map((a) => <Chip key={a} on={cat === a} onClick={() => setCat(a)}>{a === 'Alarm response' ? 'Alarm' : a === 'Administrative' ? 'Admin' : a}</Chip>)}</div>}>
+      <Panel frame={list} index={0} title={`SOP Library · ${rows.length}`} subtitle="Select a procedure" action={<div className="flex gap-[6px]">{(['All', 'Emergency', 'Alarm response', 'Routine', 'Administrative'] as const).map((a) => <Chip key={a} on={cat === a} onClick={() => setCat(a)}>{a === 'Alarm response' ? 'Alarm' : a === 'Administrative' ? 'Admin' : a}</Chip>)}</div>}>
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             dense
@@ -376,13 +373,12 @@ export function SopLibraryScreen() {
               { key: 'id', header: 'ID', width: 92, render: (s) => <span className="font-mono text-[12px] text-accent">{s.id}</span> },
               { key: 't', header: 'Procedure', render: (s) => <span className="text-white">{s.title}</span> },
               { key: 'p', header: 'Pri.', width: 40, render: (s) => s.priority },
-              { key: 'd', header: 'Data', width: 92, render: (s) => <TierBadge tier={s.tier} /> },
               { key: 'a', header: 'Active', width: 60, align: 'right', render: (s) => (active(s.id) ? <span className="text-warn">{active(s.id)}</span> : <span className="text-ink-4">0</span>) },
             ]}
           />
         </div>
       </Panel>
-      <Panel frame={detail} index={1} title={`${selected.id} · ${selected.title}`} subtitle={`${selected.system} · ${selected.category} · ${selected.priority} · respond ${selected.response}`}>
+      <Panel frame={detail} index={1} title={`${selected.id} · ${selected.title}`} subtitle={`${selected.priority} · ${selected.system} · respond ${selected.response}`}>
         <SopDetail s={selected} activeCount={active(selected.id)} />
       </Panel>
     </>
@@ -488,8 +484,8 @@ const COVERAGE: Omit<CoverageRow, 'qty' | 'points'>[] = [
 ];
 
 export function CoverageScreen() {
-  const tiles = row(208, 150, 5);
-  const [table, side] = row(383, 595, [1.7, 1]);
+  const tiles = row(208, 130, 4);
+  const [table, side] = row(363, 615, [1.7, 1]);
   const rows: CoverageRow[] = COVERAGE.map((c) => {
     const qty = ASSETS.filter((a) => c.kinds.includes(a.kind)).length;
     const points = c.kinds.reduce((acc, k) => acc + ASSETS.filter((a) => a.kind === k).length * KINDS[k].template.attrs.length, 0);
@@ -505,26 +501,12 @@ export function CoverageScreen() {
   ];
   return (
     <>
-      <Panel frame={tiles[0]} index={0} title="Modelled Points" subtitle={PROJECT.submittal}>
-        <div className="absolute inset-x-[18px] bottom-[14px] flex items-end gap-[8px]">
-          <span className="text-[42px] font-medium leading-none tabular-nums text-white">{total.toLocaleString('en-US')}</span>
-          <span className="pb-[4px] text-ink-3">on {ASSETS.length.toLocaleString('en-US')} assets</span>
-        </div>
-      </Panel>
-      {counts.map(([t, label], i) => {
+      <StatTile frame={tiles[0]} index={0} label="Modelled Points" value={total.toLocaleString('en-US')} note={`on ${ASSETS.length.toLocaleString('en-US')} assets`} />
+      {counts.slice(0, 3).map(([t, label], i) => {
         const v = tierPoints(t);
-        return (
-          <Panel key={t} frame={tiles[i + 1]} index={i + 1} title={label} subtitle={TIERS[t].label}>
-            <div className="absolute inset-x-[18px] bottom-[14px] flex items-end gap-[8px]">
-              <span className="text-[42px] font-medium leading-none tabular-nums" style={{ color: TIERS[t].color }}>
-                {v.toLocaleString('en-US')}
-              </span>
-              <span className="pb-[4px] text-ink-3">{((v / total) * 100).toFixed(0)} %</span>
-            </div>
-          </Panel>
-        );
+        return <StatTile key={t} frame={tiles[i + 1]} index={i + 1} label={label} tier={t} value={v.toLocaleString('en-US')} note={`${((v / total) * 100).toFixed(0)} % of points`} />;
       })}
-      <Panel frame={table} index={5} title="Integration Coverage" subtitle="From the SA integration matrices, EL served equipment and I/O list">
+      <Panel frame={table} index={5} title="Integration Coverage" subtitle="From the SA matrices and the EL">
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             dense
@@ -541,7 +523,7 @@ export function CoverageScreen() {
           />
         </div>
       </Panel>
-      <Panel frame={side} index={6} title="How to Read the Tiers" subtitle="Every KPI, SOP and point carries one">
+      <Panel frame={side} index={6} title="How to Read the Tiers" subtitle="Every KPI, SOP and point has one">
         <div className="pf-scroll absolute inset-x-[20px] bottom-[14px] top-[0px] space-y-[14px] text-[14px]">
           {(Object.keys(TIERS) as SourceTier[]).map((t) => (
             <div key={t}>

@@ -506,7 +506,7 @@ export function simulate(a: Asset, t: number, ctx: SimContext): AssetState {
       const testing = new Date(t).getDay() === 2 && h >= 10 && h < 10.5 && a.n % 3 === 0;
       const running = ctx.mainsFailed || testing;
       const notAuto = chance(tag, t, 'auto', 480) < 0.03;
-      const fuel = clamp(92 - hash01(tag + Math.floor(t / 604_800_000)) * 60, 25, 100);
+      const fuel = chance(tag, t, 'fuel', 1440) < 0.04 ? 36 : clamp(96 - hash01(tag + Math.floor(t / 604_800_000)) * 40, 25, 100);
       set('Sts_Running', running);
       set('Sts_Auto', !notAuto);
       set('GCB_Closed', ctx.mainsFailed);
@@ -603,7 +603,7 @@ export function simulate(a: Asset, t: number, ctx: SimContext): AssetState {
       break;
     }
     case 'elv': {
-      const fault = chance(tag, t, 'f', 180) < 0.012;
+      const fault = chance(tag, t, 'f', 180) < 0.007;
       const trapped = fault && chance(tag, t, 'e', 180) < 0.12;
       const busy = prof('occupancy', t);
       const moving = !fault && hash01(`${tag}${Math.floor(t / 20_000)}`) < busy;
@@ -623,8 +623,8 @@ export function simulate(a: Asset, t: number, ctx: SimContext): AssetState {
     }
     case 'esc': {
       const open = h >= 9 && h < 24;
-      const fault = chance(tag, t, 'f', 180) < 0.015;
-      const estop = !fault && chance(tag, t, 'es', 60) < 0.006;
+      const fault = chance(tag, t, 'f', 180) < 0.01;
+      const estop = !fault && chance(tag, t, 'es', 60) < 0.004;
       set('Running', open && !fault && !estop);
       set('Direction', a.n % 2 ? 2 : 1);
       set('Fault', fault);

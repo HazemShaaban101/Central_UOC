@@ -5,10 +5,11 @@ import { row } from '@/screens/layout';
 import { ASSETS, coolingLoad, outdoorTemp, type AssetKind } from '@/model/central/assets';
 import { plantPower, plantTons } from '@/model/central/kpis';
 import { useFleet } from '@/model/central/useFleet';
-import { Big, FleetPanel, KpiTile, STATUS, StatusRing, TierBadge, ZoneBars, useDrawer, useFleetRows, type FleetRow } from '@/screens/central/kit';
+import { AlarmList, FleetPanel, KpiTile, STATUS, StatTile, ZoneBars, useDrawer, useFleetRows, type FleetRow } from '@/screens/central/kit';
 import { fmt } from '@/utils/format';
 
 const n = (x: unknown) => (typeof x === 'number' ? x : 0);
+const PLANT_KINDS: AssetKind[] = ['chiller', 'pchwp', 'cwp', 'ct', 'aux', 'crac'];
 const RED = '#d96b84';
 const VIOLET = '#9d78ff';
 
@@ -17,28 +18,28 @@ const VIOLET = '#9d78ff';
  * ============================================================================================== */
 
 export function ChillerPlantScreen() {
-  const tiles = row(208, 150, 5);
-  const [schem] = row(383, 380, 1);
-  const [power, table] = row(788, 190, [1, 2.6]);
+  const tiles = row(208, 130, 4);
+  const [schem] = row(363, 400, 1);
+  const [power, alarms] = row(788, 190, [1, 2]);
   const { kpi } = useFleet();
   const tons = plantTons(kpi);
-  const plant = useFleetRows(['chiller', 'pchwp', 'cwp', 'aux', 'crac'], { plantWide: true });
   return (
     <>
-      <KpiTile id="EX-02" frame={tiles[0]} index={0} big />
-      <Panel frame={tiles[1]} index={1} title="Plant Load" subtitle="Chiller duty · 6 × 1,000 TR (assumed rating)">
-        <Big value={fmt(tons)} unit="TR" note={`${Math.round(coolingLoad(kpi.now) * 100)} % of the day's peak profile · OAT ${outdoorTemp(kpi.now).toFixed(1)} °C`} />
-      </Panel>
+      <KpiTile id="EX-02" frame={tiles[0]} index={0} />
+      <StatTile frame={tiles[1]} index={1} label="Plant Load" value={fmt(tons)} unit="TR" note={`Outdoor ${outdoorTemp(kpi.now).toFixed(1)} °C · ${Math.round(coolingLoad(kpi.now) * 100)} % of peak`} />
       <KpiTile id="OP-02" frame={tiles[2]} index={2} />
       <KpiTile id="OP-03" frame={tiles[3]} index={3} />
-      <KpiTile id="OP-04" frame={tiles[4]} index={4} />
-      <Panel frame={schem} index={5} title="Chilled-Water Plant · Basement 01" subtitle="LCP-BS1-03 (AS-P) · hardwired I/O + chiller BACnet IP + PCHWP VSD Modbus RTU · click any unit" action={<TierBadge tier="io" long />}>
+      <Panel frame={schem} index={4} title="Chilled-Water Plant · Basement 01" subtitle="Click any chiller or pump for its live points">
         <PlantSchematic />
       </Panel>
-      <Panel frame={power} index={6} title="Plant Power" subtitle="Where the kW go">
+      <Panel frame={power} index={5} title="Plant Power">
         <PlantPower />
       </Panel>
-      <FleetPanel frame={table} index={7} title="Plant Equipment" rows={plant} />
+      <Panel frame={alarms} index={6} title="Plant Alarms">
+        <div className="absolute inset-x-[4px] bottom-[10px] top-[2px]">
+          <AlarmList compact filter={(a) => PLANT_KINDS.includes(a.kind)} />
+        </div>
+      </Panel>
     </>
   );
 }
@@ -47,14 +48,14 @@ function PlantPower() {
   const { kpi } = useFleet();
   const p = plantPower(kpi);
   const segs = [
-    { name: 'Chillers (BACnet)', v: p.ch, color: VIOLET },
-    { name: 'Pumps (VSD Modbus / est.)', v: p.pumps, color: '#e4ccff' },
-    { name: 'Tower fans (est.)', v: p.towers, color: '#7fcf9d' },
+    { name: 'Chillers', v: p.ch, color: VIOLET },
+    { name: 'Pumps', v: p.pumps, color: '#e4ccff' },
+    { name: 'Tower fans', v: p.towers, color: '#7fcf9d' },
   ];
   return (
     <div className="flex h-full items-center gap-[18px] px-[18px] pb-[10px]">
       <RingGauge segments={segs.map((s) => ({ value: s.v, color: s.color }))} value={fmt(p.total)} unit="kW" size={120} />
-      <ul className="flex-1 space-y-[6px] text-[13px]">
+      <ul className="flex-1 space-y-[8px] text-[14px]">
         {segs.map((s) => (
           <li key={s.name} className="flex items-center gap-[7px] text-ink-2">
             <span className="h-[7px] w-[7px] rounded-full" style={{ background: s.color }} />
@@ -137,8 +138,8 @@ function PlantSchematic() {
  * ============================================================================================== */
 
 export function HeatRejectionScreen() {
-  const tiles = row(208, 150, 4);
-  const [cells, table] = row(383, 595, [1.3, 1]);
+  const tiles = row(208, 130, 4);
+  const [cells, table] = row(363, 615, [1.3, 1]);
   const { now, snap } = useFleet();
   const towers = useFleetRows(['ct', 'cwp'], { plantWide: true });
   const cts = ASSETS.filter((a) => a.kind === 'ct');
@@ -148,16 +149,10 @@ export function HeatRejectionScreen() {
   return (
     <>
       <KpiTile id="OP-05" frame={tiles[0]} index={0} big />
-      <Panel frame={tiles[1]} index={1} title="Tower Cells Running" subtitle="6 cells · LCP-B03-ROOF-01/02">
-        <Big value={`${run.length} / 6`} note="Staged with the chillers" />
-      </Panel>
-      <Panel frame={tiles[2]} index={2} title="Leaving Water" subtitle="Average of running cells">
-        <Big value={out?.toFixed(1) ?? '—'} unit="°C" tone={out !== null && out > 33 ? 'warn' : 'neutral'} note="Condenser entering design 29.5 °C" />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Outdoor Air" subtitle="SHO2 outdoor T/RH sensor (Basement-01 BoQ)">
-        <Big value={oat.toFixed(1)} unit="°C" note={`Wet bulb ≈ ${(oat - 11).toFixed(1)} °C`} />
-      </Panel>
-      <Panel frame={cells} index={4} title="Cooling Tower Cells · Building 03 Roof" subtitle="Fan VSD speed, basin level and leaving water per cell · click a cell">
+      <StatTile frame={tiles[1]} index={1} label="Tower Cells Running" value={`${run.length} / 6`} note="Staged with the chillers" />
+      <StatTile frame={tiles[2]} index={2} label="Leaving Water" value={out?.toFixed(1) ?? '—'} unit="°C" tone={out !== null && out > 33 ? 'warn' : 'neutral'} note="Design 29.5 °C" />
+      <StatTile frame={tiles[3]} index={3} label="Outdoor Air" value={oat.toFixed(1)} unit="°C" note={`Wet bulb ≈ ${(oat - 11).toFixed(1)} °C`} />
+      <Panel frame={cells} index={4} title="Cooling Towers · Building 03 Roof" subtitle="Click a cell for its live points">
         <TowerCells />
       </Panel>
       <FleetPanel frame={table} index={5} title="Towers & Condenser Pumps" rows={towers} />
@@ -201,8 +196,8 @@ function TowerCells() {
  * ============================================================================================== */
 
 export function AirHandlingScreen() {
-  const tiles = row(208, 150, 4);
-  const [bars, table] = row(383, 595, [1, 1.6]);
+  const tiles = row(208, 130, 4);
+  const [bars, table] = row(363, 615, [1, 1.6]);
   const units = useFleetRows(['fahu', 'ahu', 'crac']);
   const running = units.filter((r) => r.s.status === 'run').length;
   const smoke = units.filter((r) => r.s.values.Smoke_Det || r.s.values.Smoke_Det_Supply).length;
@@ -210,19 +205,12 @@ export function AirHandlingScreen() {
     <>
       <KpiTile id="OP-06" frame={tiles[0]} index={0} big />
       <KpiTile id="OP-09" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Units Running" subtitle="26 FAHU · 4 AHU · 2 CRAC">
-        <Big value={`${running} / ${units.length}`} note="FAHU 06:00–24:00 · B07 kitchens 07:00–01:00" />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Duct Smoke Detectors" subtitle="Hardwired DI · unit trips on alarm (SOP-LS-03)">
-        <Big value={smoke} tone={smoke ? 'bad' : 'neutral'} note={smoke ? 'Unit(s) shut down on smoke' : 'All clear'} />
-      </Panel>
-      <Panel frame={{ ...bars, h: 285 }} index={4} title="Units per Building" subtitle="Running vs installed">
+      <StatTile frame={tiles[2]} index={2} label="Units Running" value={`${running} / ${units.length}`} note="Scheduled 06:00–24:00" />
+      <StatTile frame={tiles[3]} index={3} label="Duct Smoke Detectors" value={smoke} tone={smoke ? 'bad' : 'neutral'} note={smoke ? 'Unit(s) shut down on smoke' : 'All clear'} />
+      <Panel frame={bars} index={4} title="Units per Building" subtitle="Installed vs running">
         <ZoneBars kinds={['fahu', 'ahu']} a={(r) => r.length} b={(r) => r.filter((x) => x.s.status === 'run').length} names={{ a: 'Installed', b: 'Running' }} yTitle="Units" />
       </Panel>
-      <Panel frame={{ ...bars, y: bars.y + 310, h: 285 }} index={5} title="Status" subtitle="All air handlers in scope">
-        <StatusRing rows={units} size={160} />
-      </Panel>
-      <FleetPanel frame={table} index={6} title="Air Handlers" subtitle="Click a FAHU for its points and the 3D unit view" rows={units} />
+      <FleetPanel frame={table} index={5} title="Air Handlers" subtitle="Click a FAHU for its points and 3D view" rows={units} />
     </>
   );
 }
@@ -232,8 +220,8 @@ export function AirHandlingScreen() {
  * ============================================================================================== */
 
 export function FcuScreen() {
-  const tiles = row(208, 150, 4);
-  const [left, table] = row(383, 595, [1, 1.45]);
+  const tiles = row(208, 130, 4);
+  const [left, table] = row(363, 615, [1, 1.45]);
   const all = useFleetRows(['fcu']);
   const on = all.filter((r) => r.s.values.OnOff);
   const avg = on.length ? on.reduce((a, r) => a + n(r.s.values.Room_Temp), 0) / on.length : null;
@@ -242,19 +230,12 @@ export function FcuScreen() {
     <>
       <KpiTile id="EX-05" frame={tiles[0]} index={0} big />
       <KpiTile id="OP-08" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Units On / Occupied" subtitle="TC903 occupancy (card-reader) input">
-        <Big value={`${on.length} / ${all.length}`} note={`${all.length ? Math.round((on.length / all.length) * 100) : 0} % occupied`} />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Average Room Temperature" subtitle="Occupied rooms">
-        <Big value={avg?.toFixed(1) ?? '—'} unit="°C" note="Set points 22–25 °C" />
-      </Panel>
-      <Panel frame={{ ...left, h: 285 }} index={4} title="Comfort per Building" subtitle="Occupied rooms vs rooms within ±1.5 K">
-        <ZoneBars kinds={['fcu']} a={(r) => r.filter((x) => x.s.values.OnOff).length} b={(r) => r.filter((x) => x.s.values.OnOff && Math.abs(n(x.s.values.Room_Temp) - n(x.s.values.Setpoint)) <= 1.5).length} names={{ a: 'Occupied', b: 'In comfort band' }} yTitle="Rooms" />
-      </Panel>
-      <Panel frame={{ ...left, y: left.y + 310, h: 285 }} index={5} title="Deviation from Set Point" subtitle="Occupied rooms, room − set point">
+      <StatTile frame={tiles[2]} index={2} label="Units On / Occupied" value={`${on.length} / ${all.length}`} note={`${all.length ? Math.round((on.length / all.length) * 100) : 0} % occupied`} />
+      <StatTile frame={tiles[3]} index={3} label="Average Room Temperature" value={avg?.toFixed(1) ?? '—'} unit="°C" note="Set points 22–25 °C" />
+      <Panel frame={left} index={4} title="Room vs Set Point" subtitle="Occupied rooms by deviation (K)">
         <Deviation rows={on} />
       </Panel>
-      <FleetPanel frame={table} index={6} title="FCUs Needing Attention" subtitle={`${attention.length} of ${all.length} · out of band, alarm or not communicating`} rows={attention} />
+      <FleetPanel frame={table} index={5} title="FCUs Needing Attention" subtitle={`${attention.length} of ${all.length} rooms`} rows={attention} />
     </>
   );
 }
@@ -273,7 +254,7 @@ function Deviation({ rows }: { rows: FleetRow[] }) {
         return (
           <div key={i} className="flex flex-1 flex-col items-center gap-[4px]">
             <span className="text-[11px] tabular-nums text-ink-3">{c}</span>
-            <div className="w-full rounded-t-[4px]" style={{ height: `${(c / max) * 150}px`, background: inBand ? VIOLET : '#e8a98c', opacity: inBand ? 0.9 : 0.75 }} />
+            <div className="w-full rounded-t-[4px]" style={{ height: `${(c / max) * 380}px`, background: inBand ? VIOLET : '#e8a98c', opacity: inBand ? 0.9 : 0.75 }} />
             <span className="text-[10px] text-ink-4">{bins[i] > 0 ? '+' : ''}{bins[i]}</span>
           </div>
         );
@@ -287,8 +268,8 @@ function Deviation({ rows }: { rows: FleetRow[] }) {
  * ============================================================================================== */
 
 export function CarParkScreen() {
-  const tiles = row(208, 150, 4);
-  const [map, table] = row(383, 595, [1.35, 1]);
+  const tiles = row(208, 130, 4);
+  const [map, table] = row(363, 615, [1.35, 1]);
   const fans = useFleetRows(['pef', 'psf'], { plantWide: true });
   const pef = fans.filter((r) => r.a.kind === 'pef');
   const max = Math.max(0, ...pef.map((r) => n(r.s.values.Zone_CO)));
@@ -297,13 +278,9 @@ export function CarParkScreen() {
     <>
       <KpiTile id="EX-13" frame={tiles[0]} index={0} big />
       <KpiTile id="OP-10" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Highest Zone CO" subtitle="395 EasyLogic CP sensors (0–250 ppm)">
-        <Big value={max} unit="ppm" tone={max > 100 ? 'bad' : max > 50 ? 'warn' : 'neutral'} note="Boost > 50 ppm · evacuate zone > 100 ppm" />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Fan Power" subtitle="192 fans · VSD Modbus RTU">
-        <Big value={fmt(kw)} unit="kW" note="CO-controlled speed saves vs constant 100 %" />
-      </Panel>
-      <Panel frame={map} index={4} title="CO Map · Exhaust Zones" subtitle="48 zones per level · colour = zone CO · click a zone" action={<TierBadge tier="io" long />}>
+      <StatTile frame={tiles[2]} index={2} label="Highest Zone CO" value={max} unit="ppm" tone={max > 100 ? 'bad' : max > 50 ? 'warn' : 'neutral'} note="Fans boost above 50 ppm" />
+      <StatTile frame={tiles[3]} index={3} label="Fan Power" value={fmt(kw)} unit="kW" note="CO-controlled speed" />
+      <Panel frame={map} index={4} title="Car-Park CO by Zone" subtitle="Colour = CO level · click a zone">
         <CoMap rows={pef} />
       </Panel>
       <FleetPanel frame={table} index={5} title="Car-Park Fans" rows={fans} />
@@ -342,28 +319,21 @@ function CoMap({ rows }: { rows: FleetRow[] }) {
  * ============================================================================================== */
 
 export function VentilationScreen() {
-  const tiles = row(208, 150, 4);
-  const [ring, table] = row(383, 595, [1, 1.6]);
+  const tiles = row(208, 130, 4);
+  const [ring, table] = row(363, 615, [1, 1.6]);
   const fans = useFleetRows(['exhaust', 'makeup', 'kmakeup']);
   const kitchen = fans.filter((r) => r.a.kind === 'kmakeup');
   const run = fans.filter((r) => r.s.status === 'run').length;
   return (
     <>
-      <Panel frame={tiles[0]} index={0} title="Fans Running" subtitle="Exhaust · make-up · kitchen make-up">
-        <Big value={`${run} / ${fans.length}`} note="Time-scheduled from the BMS" />
-      </Panel>
+      <StatTile frame={tiles[0]} index={0} label="Fans Running" value={`${run} / ${fans.length}`} note="Time-scheduled from the BMS" />
       <KpiTile id="MT-02" frame={tiles[1]} index={1} />
       <KpiTile id="OP-07" frame={tiles[2]} index={2} />
-      <Panel frame={tiles[3]} index={3} title="Kitchen Make-Up (B07)" subtitle="17 fans · F&B extract balance">
-        <Big value={`${kitchen.filter((r) => r.s.status === 'run').length} / ${kitchen.length}`} tone={kitchen.some((r) => r.s.status === 'fault') ? 'warn' : 'neutral'} note={kitchen.some((r) => r.s.status === 'fault') ? 'Trip — tell the tenant (SOP-HV-09)' : 'All available'} />
-      </Panel>
-      <Panel frame={{ ...ring, h: 285 }} index={4} title="Status" subtitle="All ventilation fans in scope">
-        <StatusRing rows={fans} size={160} />
-      </Panel>
-      <Panel frame={{ ...ring, y: ring.y + 310, h: 285 }} index={5} title="Fans per Building" subtitle="Installed vs running">
+      <StatTile frame={tiles[3]} index={3} label="Kitchen Make-Up (B07)" value={`${kitchen.filter((r) => r.s.status === 'run').length} / ${kitchen.length}`} tone={kitchen.some((r) => r.s.status === 'fault') ? 'warn' : 'neutral'} note={kitchen.some((r) => r.s.status === 'fault') ? 'One or more tripped' : 'All available'} />
+      <Panel frame={ring} index={4} title="Fans per Building" subtitle="Installed vs running">
         <ZoneBars kinds={['exhaust', 'makeup', 'kmakeup']} a={(r) => r.length} b={(r) => r.filter((x) => x.s.status === 'run').length} names={{ a: 'Installed', b: 'Running' }} yTitle="Fans" />
       </Panel>
-      <FleetPanel frame={table} index={6} title="Ventilation Fans" rows={fans} />
+      <FleetPanel frame={table} index={5} title="Ventilation Fans" rows={fans} />
     </>
   );
 }

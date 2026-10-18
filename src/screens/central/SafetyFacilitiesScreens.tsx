@@ -3,14 +3,13 @@ import { Panel } from '@/components/frame/Panel';
 import { DataTable, Meter, Tag, type TagTone } from '@/components/data/DataTable';
 import { RingGauge } from '@/components/gauges/Gauges';
 import { row } from '@/screens/layout';
-import { hash01 } from '@/model/assets/galaxy';
 import { ASSETS, KINDS, type AssetKind } from '@/model/central/assets';
 import { overdue, ppmPlan, SLA_HOURS, woStatus, workOrders, type WoStatus } from '@/model/central/cafm';
 import { BUILDINGS, TIERS, ZONES, zoneById, type SourceTier, type ZoneId } from '@/model/central/project';
 import { useFleet } from '@/model/central/useFleet';
 import { useScenario } from '@/sim/scenario';
 import { useScope } from '@/sim/scope';
-import { Big, FleetPanel, KpiTile, TierBadge, ZoneBars, useDrawer, useFleetRows } from '@/screens/central/kit';
+import { FleetPanel, KpiTile, StatTile, TierBadge, ZoneBars, useDrawer, useFleetRows } from '@/screens/central/kit';
 import { fmt } from '@/utils/format';
 
 const n = (x: unknown) => (typeof x === 'number' ? x : 0);
@@ -20,41 +19,45 @@ const n = (x: unknown) => (typeof x === 'number' ? x : 0);
  * ============================================================================================== */
 
 export function FireAlarmScreen() {
-  const tiles = row(208, 150, 4);
-  const [ce, side] = row(383, 595, [1.45, 1]);
+  const tiles = row(208, 130, 4);
+  const [ce, side] = row(363, 615, [1.45, 1]);
   const fire = useScenario((s) => s.fire);
   const scope = useScope();
   const [pick, setPick] = useState<ZoneId>('b03');
   const zone: ZoneId = fire.active && fire.zone ? fire.zone : scope !== 'project' && scope !== 'bs' ? (scope as ZoneId) : pick;
   const panels = useFleetRows(['facp']);
+  const smokeRunning = useFleetRows(['smoke']).filter((r) => r.s.values.Sts_Run).length;
   return (
     <>
       <KpiTile id="EX-06" frame={tiles[0]} index={0} big />
       <KpiTile id="OP-15" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Panels in Fire Alarm" subtitle="8 FACPs · BACnet IP to AVEVA">
-        <Big value={panels.filter((r) => r.s.values.Fire_Alarm).length} tone={fire.active ? 'bad' : 'neutral'} note={fire.active ? `${zoneById(fire.zone ?? undefined)?.label} · ${fire.detectors.join(', ')}` : 'No fire alarm'} />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Fire Drill" subtitle="Runs SOP-LS-01 cause-and-effect">
-        <div className="absolute inset-x-[18px] bottom-[16px] flex items-center gap-[10px]">
-          <select value={zone} disabled={fire.active} onChange={(e) => setPick(e.target.value as ZoneId)} className="h-[40px] rounded-[10px] border border-accent/30 bg-night-900 px-[10px] text-white">
-            {BUILDINGS.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.label}
-              </option>
-            ))}
-          </select>
-          {fire.active ? (
-            <button onClick={() => useScenario.getState().resolveFireAlarm()} className="pf-chip h-[40px] flex-1 border border-ok/50 text-ok hover:bg-ok/10">Reset alarm</button>
-          ) : (
-            <button onClick={() => useScenario.getState().triggerFireAlarm(zone)} className="pf-chip h-[40px] flex-1 border border-alarm/50 text-alarm-soft hover:bg-alarm/10">Simulate fire</button>
-          )}
-        </div>
-      </Panel>
-      <Panel frame={ce} index={4} title={`Cause & Effect · ${zoneById(zone)?.label}`} subtitle={fire.active ? 'Fire alarm ACTIVE — each effect verified from live points' : 'Standby — what the fire alarm will do, and the points that prove it'}>
+      <StatTile frame={tiles[2]} index={2} label="Panels in Fire Alarm" value={panels.filter((r) => r.s.values.Fire_Alarm).length} tone={fire.active ? 'bad' : 'neutral'} note={fire.active ? `${zoneById(fire.zone ?? undefined)?.label} · ${fire.detectors.join(', ')}` : 'No fire alarm'} />
+      <StatTile frame={tiles[3]} index={3} label="Smoke Fans Running" value={smokeRunning} tone={fire.active ? 'warn' : 'neutral'} note={fire.active ? 'Fire mode' : 'Standby in Auto'} />
+      <Panel frame={ce} index={4} title={`Cause & Effect · ${zoneById(zone)?.label}`} subtitle={fire.active ? 'ACTIVE — each effect checked against live points' : 'What happens on alarm, and how it is checked'} action={<FireDrill zone={zone} setPick={setPick} />}>
         <CauseEffect zone={zone} active={fire.active && fire.zone === zone} />
       </Panel>
-      <FleetPanel frame={side} index={5} title="Fire Alarm Panels" subtitle="Panel content assumed (by others) · click for the assumed object list" rows={panels} />
+      <FleetPanel frame={side} index={5} title="Fire Alarm Panels" subtitle="Content assumed (by others)" rows={panels} />
     </>
+  );
+}
+
+function FireDrill({ zone, setPick }: { zone: ZoneId; setPick: (z: ZoneId) => void }) {
+  const fire = useScenario((s) => s.fire);
+  return (
+    <div className="flex items-center gap-[8px]">
+      <select value={zone} disabled={fire.active} onChange={(e) => setPick(e.target.value as ZoneId)} className="h-[34px] rounded-[10px] border border-accent/30 bg-night-900 px-[8px] text-[14px] text-white">
+        {BUILDINGS.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.label}
+          </option>
+        ))}
+      </select>
+      {fire.active ? (
+        <button onClick={() => useScenario.getState().resolveFireAlarm()} className="pf-chip h-[34px] border border-ok/50 px-[14px] text-[14px] text-ok hover:bg-ok/10">Reset alarm</button>
+      ) : (
+        <button onClick={() => useScenario.getState().triggerFireAlarm(zone)} className="pf-chip h-[34px] border border-alarm/50 px-[14px] text-[14px] text-alarm-soft hover:bg-alarm/10">Simulate fire</button>
+      )}
+    </div>
   );
 }
 
@@ -82,9 +85,8 @@ function CauseEffect({ zone, active }: { zone: ZoneId; active: boolean }) {
         highlight={(l) => (active && l.done < l.total ? 'alarm' : null)}
         columns={[
           { key: 'e', header: 'Effect', render: (l) => <span className="text-white">{l.effect}</span> },
-          { key: 'p', header: 'Verified by', width: 290, render: (l) => <span className="font-mono text-[12px] text-ink-3">{l.points}</span> },
-          { key: 't', header: 'Data', width: 100, render: (l) => <TierBadge tier={l.tier} /> },
-          { key: 'n', header: 'Units', width: 70, align: 'right', render: (l) => (l.total ? `${l.done}/${l.total}` : '—') },
+          { key: 'p', header: 'Checked by', width: 250, render: (l) => <span className="font-mono text-[12px] text-ink-3">{l.points}</span> },
+                    { key: 'n', header: 'Units', width: 70, align: 'right', render: (l) => (l.total ? `${l.done}/${l.total}` : '—') },
           {
             key: 's',
             header: 'State',
@@ -103,8 +105,8 @@ function CauseEffect({ zone, active }: { zone: ZoneId; active: boolean }) {
  * ============================================================================================== */
 
 export function SmokeControlScreen() {
-  const tiles = row(208, 150, 4);
-  const [left, table] = row(383, 595, [1, 1.6]);
+  const tiles = row(208, 130, 4);
+  const [left, table] = row(363, 615, [1, 1.6]);
   const fans = useFleetRows(['smoke', 'press']);
   const notAuto = fans.filter((r) => r.s.values.Sts_Auto === false).length;
   const trips = fans.filter((r) => r.s.values.Alm_Trip).length;
@@ -112,59 +114,32 @@ export function SmokeControlScreen() {
   return (
     <>
       <KpiTile id="EX-06" frame={tiles[0]} index={0} big />
-      <Panel frame={tiles[1]} index={1} title="Fans Not in Auto" subtitle="Hand/Off/Auto selector (DI)">
-        <Big value={notAuto} tone={notAuto ? 'warn' : 'neutral'} note="Impairs smoke control (SOP-LS-02)" />
-      </Panel>
-      <Panel frame={tiles[2]} index={2} title="Fans Tripped" subtitle="Overload / power fail (DI)">
-        <Big value={trips} tone={trips ? 'bad' : 'neutral'} note={`${fans.length} life-safety fans in scope`} />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Stair Pressure" subtitle="ΔP transmitter on running fans">
-        <Big value={dp.length ? Math.round(dp.reduce((a, b) => a + b, 0) / dp.length) : '—'} unit={dp.length ? 'Pa' : ''} note="Target 40–50 Pa in fire mode" />
-      </Panel>
-      <Panel frame={{ ...left, h: 285 }} index={4} title="Readiness per Building" subtitle="Fans installed vs ready (Auto, no trip)">
+      <StatTile frame={tiles[1]} index={1} label="Fans Not in Auto" value={notAuto} tone={notAuto ? 'warn' : 'neutral'} note="Impairs smoke control" />
+      <StatTile frame={tiles[2]} index={2} label="Fans Tripped" value={trips} tone={trips ? 'bad' : 'neutral'} note={`${fans.length} life-safety fans in scope`} />
+      <StatTile frame={tiles[3]} index={3} label="Stair Pressure" value={dp.length ? Math.round(dp.reduce((a, b) => a + b, 0) / dp.length) : '—'} unit={dp.length ? 'Pa' : ''} note="Target 40–50 Pa in fire mode" />
+      <Panel frame={left} index={4} title="Readiness per Building" subtitle="Installed vs ready (Auto, no trip)">
         <ZoneBars kinds={['smoke', 'press']} a={(r) => r.length} b={(r) => r.filter((x) => x.s.values.Sts_Auto && !x.s.values.Alm_Trip).length} names={{ a: 'Installed', b: 'Ready' }} yTitle="Fans" />
       </Panel>
-      <Panel frame={{ ...left, y: left.y + 310, h: 285 }} index={5} title="Weekly Test" subtitle="SOP-LS-06 · last run Sunday 06:00">
-        <WeeklyTest count={fans.length} />
-      </Panel>
-      <FleetPanel frame={table} index={6} title="Smoke Extract & Pressurisation Fans" rows={fans} />
+      <FleetPanel frame={table} index={5} title="Smoke Extract & Pressurisation Fans" rows={fans} />
     </>
   );
 }
 
-function WeeklyTest({ count }: { count: number }) {
-  const { now } = useFleet();
-  const week = Math.floor(now / 604_800_000);
-  const failed = Math.floor(hash01(`lstest${week}`) * 3);
-  return (
-    <div className="flex h-full items-center gap-[24px] px-[20px] pb-[10px]">
-      <RingGauge segments={[{ value: count - failed, color: '#9d78ff' }, { value: failed, color: '#d96b84' }]} value={`${count - failed}/${count}`} unit="passed" size={170} />
-      <p className="text-[14px] leading-snug text-ink-3">Each fan commanded from the BMS; airflow proven within 30 s and stair ΔP logged. {failed ? `${failed} failed → SOP-LS-02 work order raised.` : 'All passed.'}</p>
-    </div>
-  );
-}
 
 /* ================================================================================================
  * Life Safety › Public Address (assumed)
  * ============================================================================================== */
 
 export function PublicAddressScreen() {
-  const tiles = row(208, 150, 3);
-  const [table] = row(383, 595, 1);
+  const tiles = row(208, 130, 3);
+  const [table] = row(363, 615, 1);
   const racks = useFleetRows(['pa']);
   const fire = useScenario((s) => s.fire.active);
   return (
     <>
       <KpiTile id="OP-16" frame={tiles[0]} index={0} big />
-      <Panel frame={tiles[1]} index={1} title="Evacuation Messages" subtitle="Racks playing evacuation">
-        <Big value={racks.filter((r) => r.s.values.Evac_Active).length} tone={fire ? 'bad' : 'neutral'} note={fire ? 'Fire drill active' : 'None'} />
-      </Panel>
-      <Panel frame={tiles[2]} index={2} title="Integration" subtitle="AVEVA matrix: Public Address System · BACnet IP">
-        <div className="absolute inset-x-[18px] bottom-[16px] flex items-center gap-[10px]">
-          <TierBadge tier="assumed" long />
-          <span className="text-[13px] text-ink-3">Rack / zone objects assumed</span>
-        </div>
-      </Panel>
+      <StatTile frame={tiles[1]} index={1} label="Evacuation Messages" value={racks.filter((r) => r.s.values.Evac_Active).length} tone={fire ? 'bad' : 'neutral'} note={fire ? 'Fire drill active' : 'None'} />
+      <StatTile frame={tiles[2]} index={2} label="Integration" value="BACnet IP" tier="assumed" note="Rack objects assumed (by others)" />
       <FleetPanel frame={table} index={3} title="PA Racks" rows={racks} />
     </>
   );
@@ -175,8 +150,8 @@ export function PublicAddressScreen() {
  * ============================================================================================== */
 
 export function TransportScreen() {
-  const tiles = row(208, 150, 4);
-  const [bars, table] = row(383, 595, [1, 1.6]);
+  const tiles = row(208, 130, 4);
+  const [bars, table] = row(363, 615, [1, 1.6]);
   const units = useFleetRows(['elv', 'esc']);
   const lifts = units.filter((r) => r.a.kind === 'elv');
   const esc = units.filter((r) => r.a.kind === 'esc');
@@ -185,12 +160,8 @@ export function TransportScreen() {
     <>
       <KpiTile id="EX-09" frame={tiles[0]} index={0} big />
       <KpiTile id="OP-14" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Lift Trips Today" subtitle="54 lifts · Modbus TCP">
-        <Big value={fmt(trips)} note={`${lifts.filter((r) => r.s.status === 'run').length} moving now`} />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Escalators Running" subtitle="19 units · Basement / podium">
-        <Big value={`${esc.filter((r) => r.s.values.Running).length} / ${esc.length}`} note="Operating hours 09:00–24:00" />
-      </Panel>
+      <StatTile frame={tiles[2]} index={2} label="Lift Trips Today" value={fmt(trips)} note={`${lifts.filter((r) => r.s.status === 'run').length} moving now`} />
+      <StatTile frame={tiles[3]} index={3} label="Escalators Running" value={`${esc.filter((r) => r.s.values.Running).length} / ${esc.length}`} note="Operating hours 09:00–24:00" />
       <Panel frame={bars} index={4} title="Lifts per Building" subtitle="Installed vs in service">
         <ZoneBars kinds={['elv']} a={(r) => r.length} b={(r) => r.filter((x) => x.s.values.In_Service).length} names={{ a: 'Installed', b: 'In service' }} yTitle="Lifts" />
       </Panel>
@@ -204,21 +175,17 @@ export function TransportScreen() {
  * ============================================================================================== */
 
 export function DrainageScreen() {
-  const tiles = row(208, 150, 4);
-  const [grid, table] = row(383, 595, [1.2, 1]);
+  const tiles = row(208, 130, 4);
+  const [grid, table] = row(363, 615, [1.2, 1]);
   const sets = useFleetRows(['sump'], { plantWide: true });
   const open = useDrawer((s) => s.open);
   return (
     <>
       <KpiTile id="OP-11" frame={tiles[0]} index={0} big />
       <KpiTile id="MT-05" frame={tiles[1]} index={1} />
-      <Panel frame={tiles[2]} index={2} title="Pumps Running" subtitle="64 pumps in 32 duplex sets">
-        <Big value={sets.reduce((a, r) => a + (r.s.values.P1_Run ? 1 : 0) + (r.s.values.P2_Run ? 1 : 0), 0)} note="Float-switch controlled" />
-      </Panel>
-      <Panel frame={tiles[3]} index={3} title="Pumps Tripped" subtitle="Duty covered by the partner pump">
-        <Big value={sets.filter((r) => r.s.values.P1_Trip || r.s.values.P2_Trip).length} tone={sets.some((r) => r.s.values.P1_Trip) ? 'warn' : 'neutral'} note="SOP-DR-02" />
-      </Panel>
-      <Panel frame={grid} index={4} title="Sump Pits · Basement 02" subtitle="Each tile one duplex set · pumps 1 / 2 and pit level · click for points" action={<TierBadge tier="io" long />}>
+      <StatTile frame={tiles[2]} index={2} label="Pumps Running" value={sets.reduce((a, r) => a + (r.s.values.P1_Run ? 1 : 0) + (r.s.values.P2_Run ? 1 : 0), 0)} note="Float-switch control" />
+      <StatTile frame={tiles[3]} index={3} label="Pumps Tripped" value={sets.filter((r) => r.s.values.P1_Trip || r.s.values.P2_Trip).length} tone={sets.some((r) => r.s.values.P1_Trip) ? 'warn' : 'neutral'} note="SOP-DR-02" />
+      <Panel frame={grid} index={4} title="Sump Pits · Basement 02" subtitle="One tile per duplex set · click for details">
         <div className="absolute inset-x-[20px] bottom-[18px] top-[6px] grid grid-cols-8 gap-[10px]">
           {sets.map((r) => {
             const hi = r.s.values.High_Level;
@@ -254,27 +221,18 @@ const LIGHT_GROUPS = [
 ];
 
 export function LightingScreen() {
-  const tiles = row(208, 150, 3);
-  const [table] = row(383, 595, 1);
+  const tiles = row(208, 130, 3);
+  const [table] = row(363, 615, 1);
   const { now } = useFleet();
   const h = new Date(now).getHours();
   const rows = ZONES.flatMap((z) => LIGHT_GROUPS.filter((g) => (z.id === 'bs' ? g.id === 'carpark' : g.id !== 'carpark')).map((g) => ({ z, g, on: g.on(h), dim: g.id === 'corridor' && (h >= 23 || h < 6) ? 30 : 100 })));
   const kw = rows.reduce((a, r) => a + (r.on ? (r.g.kw * r.dim) / 100 : 0), 0);
   return (
     <>
-      <Panel frame={tiles[0]} index={0} title="Groups On" subtitle="By KNX time schedule">
-        <Big value={`${rows.filter((r) => r.on).length} / ${rows.length}`} note={`${String(h).padStart(2, '0')}:00 · astronomical clock`} />
-      </Panel>
-      <Panel frame={tiles[1]} index={1} title="Lighting Load" subtitle="Estimated from group ratings">
-        <Big value={fmt(kw)} unit="kW" note="Ratings assumed" />
-      </Panel>
-      <Panel frame={tiles[2]} index={2} title="Integration" subtitle="BMS matrix: Lighting Control System KNX-01 · BACnet IP">
-        <div className="absolute inset-x-[18px] bottom-[16px] flex items-center gap-[10px]">
-          <TierBadge tier="bms" long />
-          <span className="text-[13px] text-ink-3">Group list assumed until the KNX project is shared</span>
-        </div>
-      </Panel>
-      <Panel frame={table} index={3} title="Lighting Groups" subtitle="Status per building · groups assumed">
+      <StatTile frame={tiles[0]} index={0} label="Groups On" value={`${rows.filter((r) => r.on).length} / ${rows.length}`} note={`${String(h).padStart(2, '0')}:00 · astronomical clock`} />
+      <StatTile frame={tiles[1]} index={1} label="Lighting Load" value={fmt(kw)} unit="kW" note="Ratings assumed" />
+      <StatTile frame={tiles[2]} index={2} label="Integration" value="KNX" tier="bms" note="Via BACnet IP · groups assumed" />
+      <Panel frame={table} index={3} title="Lighting Groups" subtitle="Groups assumed until the KNX project is shared">
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             dense
@@ -286,8 +244,7 @@ export function LightingScreen() {
               { key: 's', header: 'State', width: 120, render: (r) => (r.on ? <Tag tone="info">On</Tag> : <Tag tone="idle">Off</Tag>) },
               { key: 'd', header: 'Level', width: 160, render: (r) => (r.on ? <Meter value={r.dim} width={90} /> : '—') },
               { key: 'k', header: 'Load', width: 100, align: 'right', render: (r) => (r.on ? `${fmt((r.g.kw * r.dim) / 100, 1)} kW` : '—') },
-              { key: 't', header: 'Data', width: 110, render: () => <TierBadge tier="assumed" /> },
-            ]}
+                          ]}
           />
         </div>
       </Panel>
@@ -302,8 +259,8 @@ export function LightingScreen() {
 const WO_TONE: Record<WoStatus, TagTone> = { Open: 'warn', Assigned: 'info', 'In progress': 'info', Closed: 'good' };
 
 export function WorkOrdersScreen() {
-  const tiles = row(208, 150, 4);
-  const [table, side] = row(383, 595, [1.75, 1]);
+  const tiles = row(208, 130, 4);
+  const [table, side] = row(363, 615, [1.75, 1]);
   const { now, scope } = useFleet(60_000);
   const open = useDrawer((s) => s.open);
   const wos = useMemo(() => workOrders(now, 7, scope), [now, scope]);
@@ -314,10 +271,8 @@ export function WorkOrdersScreen() {
       <KpiTile id="EX-11" frame={tiles[0]} index={0} big />
       <KpiTile id="MT-03" frame={tiles[1]} index={1} />
       <KpiTile id="MT-04" frame={tiles[2]} index={2} />
-      <Panel frame={tiles[3]} index={3} title="From AVEVA Alarms" subtitle="Share of WOs raised automatically (7 days)">
-        <Big value={wos.length ? Math.round((wos.filter((w) => w.source === 'AVEVA alarm').length / wos.length) * 100) : 0} unit="%" note="AVEVA Work Task → CAFM (SOP-FM-01)" />
-      </Panel>
-      <Panel frame={table} index={4} title={`Work Orders · last 7 days · ${wos.length}`} subtitle="Open first · row → the asset's live points" action={<TierBadge tier="assumed" long />}>
+      <StatTile frame={tiles[3]} index={3} label="From AVEVA Alarms" value={wos.length ? Math.round((wos.filter((w) => w.source === 'AVEVA alarm').length / wos.length) * 100) : 0} unit="%" note="Raised automatically" />
+      <Panel frame={table} index={4} title={`Work Orders · last 7 days · ${wos.length}`} subtitle="Open first · click for the asset" action={<TierBadge tier="assumed" />}>
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             dense
@@ -352,7 +307,7 @@ export function WorkOrdersScreen() {
           </ul>
         </div>
       </Panel>
-      <Panel frame={{ ...side, y: side.y + 325, h: 270 }} index={6} title="Priority SLAs" subtitle="Assumed — confirm with the FM contract">
+      <Panel frame={{ ...side, y: side.y + 325, h: 270 }} index={6} title="Priority SLAs" subtitle="Assumed · confirm with the FM contract">
         <dl className="absolute inset-x-[20px] top-[6px] grid grid-cols-2 gap-y-[10px] text-[15px]">
           {(['P1', 'P2', 'P3', 'P4'] as const).map((p) => (
             <div key={p} className="contents">
@@ -367,8 +322,8 @@ export function WorkOrdersScreen() {
 }
 
 export function PpmScreen() {
-  const tiles = row(208, 150, 3);
-  const [table] = row(383, 595, 1);
+  const tiles = row(208, 130, 3);
+  const [table] = row(363, 615, 1);
   const { now } = useFleet(60_000);
   const plan = ppmPlan(now);
   const due = plan.reduce((a, p) => a + p.due, 0);
@@ -376,11 +331,9 @@ export function PpmScreen() {
   return (
     <>
       <KpiTile id="EX-12" frame={tiles[0]} index={0} big />
-      <Panel frame={tiles[1]} index={1} title="PPM Due to Date" subtitle={new Date(now).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}>
-        <Big value={fmt(due)} note={`${fmt(done)} done on time`} />
-      </Panel>
+      <StatTile frame={tiles[1]} index={1} label="PPM Due to Date" value={fmt(due)} note={`${fmt(done)} done on time`} />
       <KpiTile id="MT-01" frame={tiles[2]} index={2} />
-      <Panel frame={table} index={3} title="PPM Plan" subtitle="Run-hour based tasks use the BMS run hours; calendar tasks the CAFM schedule" action={<TierBadge tier="assumed" long />}>
+      <Panel frame={table} index={3} title="PPM Plan" subtitle="Run-hour tasks are triggered by the BMS" action={<TierBadge tier="assumed" />}>
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             rows={plan}
@@ -409,7 +362,7 @@ export function AssetRegisterScreen() {
   const def = KINDS[kind];
   return (
     <>
-      <Panel frame={table} index={0} title={`Asset Register · ${ASSETS.length.toLocaleString('en-US')} assets`} subtitle="Counts per zone from the EL served-equipment tables · select a type for its point template">
+      <Panel frame={table} index={0} title={`Asset Register · ${ASSETS.length.toLocaleString('en-US')} assets`} subtitle="Counts per zone · select a type for its points">
         <div className="absolute inset-x-[4px] bottom-[10px] top-[4px]">
           <DataTable
             dense

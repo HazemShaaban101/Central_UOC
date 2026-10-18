@@ -67,7 +67,7 @@ export function DrillControl({ compact }: { compact?: boolean }) {
         : `Essential board on generators · ${mmss(since)}`
     : phase === 'coolDown'
       ? `Utility restored · generators cooling down (${Math.ceil(60 - since)} s)`
-      : 'Utility healthy · both 22 kV incomers live';
+      : 'Utility healthy';
   return (
     <div className={compact ? 'flex items-center gap-[14px]' : 'flex h-full flex-col justify-center gap-[14px] px-[22px] pb-[14px]'}>
       <span className="flex items-center gap-[10px] text-[15px]" style={{ color: mains.failed ? '#e0889b' : phase === 'coolDown' ? '#f0c3ab' : '#bbaacb' }}>
